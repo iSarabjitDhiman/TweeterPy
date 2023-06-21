@@ -80,6 +80,9 @@ class TweeterPy:
 
     def generate_session(self):
         self.session = requests.Session()
+        if config.PROXY is not None:
+            self.session.proxies = config.PROXY
+            self.session.verify = False
         self.session.headers.update(util.generate_headers())
         make_request(Path.BASE_URL, session=self.session)
         guest_token = make_request(
