@@ -18,7 +18,7 @@ def generate_headers():
                "Authorization": PUBLIC_TOKEN,
                "Cache-Control": "no-cache",
                "Referer": Path.BASE_URL,
-               "User-Agent": config.USER_AGENT,
+               "User-Agent": config._USER_AGENT,
                "X-Twitter-Active-User": "yes",
                "X-Twitter-Client-Language": "en"
                }
