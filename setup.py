@@ -1,6 +1,6 @@
 from setuptools import setup
 
-VERSION = "0.0.2"
+VERSION = "0.0.3"
 SHORT_DESCRIPTION = "TweeterPy is a python library to extract data from Twitter. TweeterPy API lets you scrape data from a user's profile like username, userid, bio, followers/followings list, profile media, tweets, etc."
 
 with open("requirements.txt") as file:
@@ -18,9 +18,9 @@ setup(
     author="Sarabjit Dhiman",
     author_email="hello@sarabjitdhiman.com",
     license="MIT",
-    url="https://github.com/iSarabjitDhiman/TwitterPy",
+    url="https://github.com/iSarabjitDhiman/TweeterPy",
     packages=["tweeterpy"],
-    keywords=["twitterpy", "twitter scraper", "tweet scraper",
+    keywords=["tweeterpy", "twitter scraper", "tweet scraper",
               "twitter data extraction", "twitter api",
               "twitter python", "tweet api", "tweetpy"],
     classifiers=[
