@@ -1,7 +1,10 @@
 from tweeterpy import TweeterPy
+from tweeterpy import config
 
 
 def main():
+    #config.TIMEOUT = 5
+    #config.PROXY = {'http': 'proxy_here', 'https': 'proxy_here'}
     twitter = TweeterPy()
     print(twitter.get_user_id('elonmusk'))
     print(twitter.get_user_info('elonmusk'))

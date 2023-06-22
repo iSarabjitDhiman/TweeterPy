@@ -4,6 +4,7 @@
 
 ```python
 from tweeterpy import TweeterPy
+from tweeterpy import config # if want to change configurations.Check out config docs.
 
 twitter = TweeterPy()
 ```
@@ -12,6 +13,10 @@ twitter = TweeterPy()
 
 ```python
 from tweeterpy import TweeterPy
+from tweeterpy import config
+
+config.PROXY = {"http":"127.0.0.1","https":"127.0.0.1"}
+config.TIMEOUT = 10
 
 twitter = TweeterPy()
 

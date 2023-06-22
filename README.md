@@ -52,13 +52,29 @@ Check out step by step guide.
 
 [Documentation](docs/docs.md)
 
+## Configuration
+
+> ### Example - Config Usage
+
+```python
+from tweeterpy import config
+
+config.PROXY = {"http":"127.0.0.1","https":"127.0.0.1"}
+config.TIMEOUT = 10
+
+```
+
+Check out configuration docs for the available settings.
+
+[Configurations](docs/config.md)
+
 ## Features
 
 - Extracts Tweets
 - Extracts User's Followers
 - Extracts User's Followings
 - Extracts User's Profile Details
-- Extracts Twitter Profile Media
+- Extracts Twitter Profile Media and so on.
 
 ## Authors
 
