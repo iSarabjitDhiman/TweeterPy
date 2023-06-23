@@ -130,7 +130,7 @@ class TweeterPy:
         TaskHandler().login(username, password)
         self.me
         self.session.headers.update(
-            {"X-Csrf-Token": self.session.cookies["ct0"]})
+            {"X-Csrf-Token": self.session.cookies["ct0"],"X-Twitter-Auth-Type":"OAuth2Session"})
 
     def get_user_id(self, username):
         """Get user ID of a twitter user.
