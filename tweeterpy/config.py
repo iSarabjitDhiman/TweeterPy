@@ -12,6 +12,8 @@ TIMEOUT = 5
 # Example {"http":"proxy_here","https":"proxy_here"} Accepts python dictionary.
 PROXY = None
 
+# Directory path/name to save and load logged in sessions/cookies. Default path is current directory. i.e. current_path/Twitter Saved Sessions
+SESSION_DIRECTORY = "Twitter Saved Sessions"
 
 if __name__ == "__main__":
     pass
