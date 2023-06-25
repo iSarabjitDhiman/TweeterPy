@@ -11,7 +11,7 @@ class DotDict(dict):
     __delattr__ = dict.__delitem__
 
 
-def generate_headers():
+def generate_headers(session=None):
     headers = {"Authority": Path.DOMAIN,
                "Accept-Encoding": "gzip, deflate, br",
                "Accept-Language": "en-US,en;q=0.9",
@@ -22,6 +22,11 @@ def generate_headers():
                "X-Twitter-Active-User": "yes",
                "X-Twitter-Client-Language": "en"
                }
+    if session:
+        if "auth_token" in session.cookies.keys():
+            session.get(Path.BASE_URL)
+            session.headers.update(
+                {"X-Csrf-Token": session.cookies.get("ct0", None), "X-Twitter-Auth-Type": "OAuth2Session"})
     return headers
 
 

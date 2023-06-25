@@ -123,8 +123,7 @@ class TweeterPy:
         self.session.cookies.update({'gt': guest_token})
         if auth_token:
             self.session.cookies.update({'auth_token':auth_token})
-            self.me
-            self.session.headers.update({"X-Csrf-Token": self.session.cookies["ct0"],"X-Twitter-Auth-Type":"OAuth2Session"})
+            util.generate_headers(self.session)
         return self.session
 
     def save_session(self,session=None,session_name=None):
@@ -178,9 +177,7 @@ class TweeterPy:
         if password is None:
             password = getpass.getpass()
         TaskHandler().login(username, password)
-        self.me
-        self.session.headers.update(
-            {"X-Csrf-Token": self.session.cookies["ct0"],"X-Twitter-Auth-Type":"OAuth2Session"})
+        util.generate_headers(session=self.session)
 
     def get_user_id(self, username):
         """Get user ID of a twitter user.
