@@ -102,7 +102,15 @@ class TweeterPy:
         response = self.session.get(url, params=query).json()
         return response
 
-    def generate_session(self):
+    def generate_session(self,auth_token=None):
+        """Generate a twitter session. With/Without Login.
+
+        Args:
+            auth_token (str, optional): Generate session with an auth-token. If auth_token is None (Default Behaviour), generates a guest session without login. Defaults to None.
+
+        Returns:
+            requests.Session: requests.Session Object.
+        """
         self.session = requests.Session()
         if config.PROXY is not None:
             self.session.proxies = config.PROXY
@@ -113,6 +121,10 @@ class TweeterPy:
             Path.GUEST_TOKEN_URL, method="POST", session=self.session)['guest_token']
         self.session.headers.update({'X-Guest-Token': guest_token})
         self.session.cookies.update({'gt': guest_token})
+        if auth_token:
+            self.session.cookies.update({'auth_token':auth_token})
+            self.me
+            self.session.headers.update({"X-Csrf-Token": self.session.cookies["ct0"],"X-Twitter-Auth-Type":"OAuth2Session"})
         return self.session
 
     def save_session(self,session=None,session_name=None):

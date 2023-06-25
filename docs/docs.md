@@ -69,7 +69,7 @@ save_session(session=None,session_name=None)
 ## Restore Session from a Saved Session File
 
 ```python
-load_session(self,session_file_path=None,session=None)
+load_session(session_file_path=None,session=None)
     """
         Load a saved session.
 
@@ -79,6 +79,21 @@ load_session(self,session_file_path=None,session=None)
 
         Returns:
             requests.Session: Restored session.
+    """
+```
+
+## Generate a New Session (Guest Session OR With an Auth-Toekn)
+
+```python
+generate_session(auth_token=None)
+    """
+        Generate a twitter session. With/Without Login.
+
+        Args:
+            auth_token (str, optional): Generate session with an auth-token. If auth_token is None (Default Behaviour), generates a guest session without login. Defaults to None.
+
+        Returns:
+            requests.Session: requests.Session Object.
     """
 ```
 
