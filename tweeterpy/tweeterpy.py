@@ -79,6 +79,15 @@ class TweeterPy:
                 print(error)
                 return data_container
 
+    @property
+    def session(self):
+        return self._session
+
+    @session.setter
+    def session(self,session):
+        self._session = session
+        config._DEFAULT_SESSION = session
+
     def generate_session(self):
         self.session = requests.Session()
         if config.PROXY is not None:
@@ -90,7 +99,6 @@ class TweeterPy:
             Path.GUEST_TOKEN_URL, method="POST", session=self.session)['guest_token']
         self.session.headers.update({'X-Guest-Token': guest_token})
         self.session.cookies.update({'gt': guest_token})
-        config._DEFAULT_SESSION = self.session
         return self.session
 
     def save_session(self,session=None,session_name=None):
@@ -104,7 +112,7 @@ class TweeterPy:
             path: Saved session file path.
         """
         if session is None:
-            session = config._DEFAULT_SESSION or self.session
+            session = self.session
         if session_name is None:
             session_name = self.me['data']['viewer']['user_results']['result']['legacy']['screen_name']
         return save_session(filename=session_name,session=session)
