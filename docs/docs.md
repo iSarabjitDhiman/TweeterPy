@@ -50,6 +50,38 @@ self.me
     """
 ```
 
+## Save a Logged In Session
+
+```python
+save_session(session=None,session_name=None)
+    """
+        Save a logged in session to avoid frequent logins in future.
+
+        Args:
+            session (requests.Session, optional): requests.Session object you want to save. If None, saves current session by default. Defaults to None.
+            session_name (str, optional): Session name. If None, uses currently logged in username. Defaults to None.
+
+        Returns:
+            path: Saved session file path.
+    """
+```
+
+## Restore Session from a Saved Session File
+
+```python
+load_session(self,session_file_path=None,session=None)
+    """
+        Load a saved session.
+
+        Args:
+            session_file_path (path, optional): File path to load session from. If None, shows a list of all saved session to choose from. Defaults to None.
+            session (request.Session, optional): requests.Session object to load a saved session into. Defaults to None.
+
+        Returns:
+            requests.Session: Restored session.
+    """
+```
+
 ## Log into an account
 
 ```python

@@ -8,6 +8,7 @@ from .api_util import ApiUpdater
 from .constants import Path
 from .login_util import TaskHandler
 from .request_util import make_request
+from .session_util import load_session, save_session
 from . import util
 from . import config
 
@@ -90,6 +91,35 @@ class TweeterPy:
         self.session.headers.update({'X-Guest-Token': guest_token})
         self.session.cookies.update({'gt': guest_token})
         config._DEFAULT_SESSION = self.session
+        return self.session
+
+    def save_session(self,session=None,session_name=None):
+        """Save a logged in session to avoid frequent logins in future.
+
+        Args:
+            session (requests.Session, optional): requests.Session object you want to save. If None, saves current session by default. Defaults to None. 
+            session_name (str, optional): Session name. If None, uses currently logged in username. Defaults to None.
+
+        Returns:
+            path: Saved session file path.
+        """
+        if session is None:
+            session = config._DEFAULT_SESSION or self.session
+        if session_name is None:
+            session_name = self.me['data']['viewer']['user_results']['result']['legacy']['screen_name']
+        return save_session(filename=session_name,session=session)
+
+    def load_session(self,session_file_path=None,session=None):
+        """Load a saved session.
+
+        Args:
+            session_file_path (path, optional): File path to load session from. If None, shows a list of all saved session to choose from. Defaults to None.
+            session (request.Session, optional): requests.Session object to load a saved session into. Defaults to None.
+
+        Returns:
+            requests.Session: Restored session.
+        """
+        self.session =  load_session(file_path=session_file_path,session=session)
         return self.session
 
     @property
