@@ -15,10 +15,25 @@ twitter = TweeterPy()
 from tweeterpy import TweeterPy
 from tweeterpy import config
 
-config.PROXY = {"http":"127.0.0.1","https":"127.0.0.1"}
-config.TIMEOUT = 10
+# Check Configuration docs for the available settings.
+# config.PROXY = {"http":"127.0.0.1","https":"127.0.0.1"}
+# config.TIMEOUT = 10
 
 twitter = TweeterPy()
+
+# By Deafult it uses a Guest Session.
+# Try to fetch data without login first, i.e. with a guest session. Use logged in sessions only if required.
+
+
+# If you want to use it with logged in session, use any one of the followings to generate a logged in session.
+
+# Multiple Ways of generating Sessions.
+
+> # DON'T USE ALL THREE, JUST USE ANY ONE OF THE FOLLOWINGS.
+
+# twitter.generate_session(auth_token="auth_token_here") #-- Use Auth-Token to Login
+# twitter.login("username_here","password_here") #-- Use credentials to login.
+# twitter.load_session() #-- Load session from local storage if u previously saved some session with twitter.save_session()
 
 print(twitter.get_user_id('elonmusk'))
 

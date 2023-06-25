@@ -70,7 +70,7 @@ class TweeterPy:
 
                 if not data_container["has_next_page"] or (total is not None and len(data_container['data']) >= total):
                     return data_container
-
+            # fmt: on 
             except ConnectionError as error:
                 print(error)
                 continue
@@ -84,7 +84,7 @@ class TweeterPy:
         return self._session
 
     @session.setter
-    def session(self,session):
+    def session(self, session):
         self._session = session
         config._DEFAULT_SESSION = session
 
@@ -102,7 +102,7 @@ class TweeterPy:
         response = self.session.get(url, params=query).json()
         return response
 
-    def generate_session(self,auth_token=None):
+    def generate_session(self, auth_token=None):
         """Generate a twitter session. With/Without Login.
 
         Args:
@@ -122,11 +122,11 @@ class TweeterPy:
         self.session.headers.update({'X-Guest-Token': guest_token})
         self.session.cookies.update({'gt': guest_token})
         if auth_token:
-            self.session.cookies.update({'auth_token':auth_token})
+            self.session.cookies.update({'auth_token': auth_token})
             util.generate_headers(self.session)
         return self.session
 
-    def save_session(self,session=None,session_name=None):
+    def save_session(self, session=None, session_name=None):
         """Save a logged in session to avoid frequent logins in future.
 
         Args:
@@ -140,9 +140,9 @@ class TweeterPy:
             session = self.session
         if session_name is None:
             session_name = self.me['data']['viewer']['user_results']['result']['legacy']['screen_name']
-        return save_session(filename=session_name,session=session)
+        return save_session(filename=session_name, session=session)
 
-    def load_session(self,session_file_path=None,session=None):
+    def load_session(self, session_file_path=None, session=None):
         """Load a saved session.
 
         Args:
@@ -152,7 +152,8 @@ class TweeterPy:
         Returns:
             requests.Session: Restored session.
         """
-        self.session =  load_session(file_path=session_file_path,session=session)
+        self.session = load_session(
+            file_path=session_file_path, session=session)
         return self.session
 
     def logged_in(self):
