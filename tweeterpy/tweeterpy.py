@@ -88,6 +88,20 @@ class TweeterPy:
         self._session = session
         config._DEFAULT_SESSION = session
 
+    @property
+    def me(self):
+        """Returns logged in user information.
+
+        Returns:
+            dict: Currently logged in user's data.
+        """
+        url = util.generate_url(url_path=Path.VIEWER_ENDPOINT)
+        query = {"variables": json.dumps({"withCommunitiesMemberships": True,
+                                          "withSubscribedTab": True, "withCommunitiesCreation": True}),
+                 "features": json.dumps(util.generate_features())}
+        response = self.session.get(url, params=query).json()
+        return response
+
     def generate_session(self):
         self.session = requests.Session()
         if config.PROXY is not None:
@@ -129,20 +143,6 @@ class TweeterPy:
         """
         self.session =  load_session(file_path=session_file_path,session=session)
         return self.session
-
-    @property
-    def me(self):
-        """Returns logged in user information.
-
-        Returns:
-            dict: Currently logged in user's data.
-        """
-        url = util.generate_url(url_path=Path.VIEWER_ENDPOINT)
-        query = {"variables": json.dumps({"withCommunitiesMemberships": True,
-                                          "withSubscribedTab": True, "withCommunitiesCreation": True}),
-                 "features": json.dumps(util.generate_features())}
-        response = self.session.get(url, params=query).json()
-        return response
 
     def logged_in(self):
         """Check if the user is logged in.
