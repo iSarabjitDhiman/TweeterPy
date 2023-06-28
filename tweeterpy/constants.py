@@ -2,6 +2,7 @@ PUBLIC_TOKEN = 'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4pu
 
 
 class Path:
+    # Data will be updated automatically upon API update (Manipulated by ApiUpdater from api_util.py).
     # URLS
     DOMAIN = "twitter.com"
     BASE_URL = "https://www.twitter.com/"
@@ -31,6 +32,22 @@ class Path:
     PROFILE_CATEGORY_ENDPOINT = "6OFpJ3TH3p8JpwOSgfgyhg/BizProfileFetchUser"
     TWEET_LIKES_ENDPOINT = "mpMee2WCjo7Nm4gRRHHnvA/Favoriters"
     RETWEETED_BY_ENDPOINT = "7Fwe5A6kE05QIybims116A/Retweeters"
+
+
+class FeatureSwitch:
+    # Data will be added automatically upon API update (Manipulated by ApiUpdater from api_util.py).
+    all_feature_switches = {}
+    api_endpoints = {}
+
+    def get_query_features(self, api_path):
+        # fmt: off 
+        try:
+            features = self.api_endpoints.get(api_path)['metadata']['featureSwitches']
+            features = {feature : self.all_feature_switches.get(feature)['value'] for feature in features}
+            return features
+        # fmt: on
+        except:
+            return None
 
 
 if __name__ == "__main__":

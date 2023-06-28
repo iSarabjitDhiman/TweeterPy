@@ -5,7 +5,7 @@ import getpass
 from functools import reduce
 
 from .api_util import ApiUpdater
-from .constants import Path
+from .constants import Path, FeatureSwitch
 from .login_util import TaskHandler
 from .request_util import make_request
 from .session_util import load_session, save_session
@@ -21,11 +21,13 @@ class TweeterPy:
         ApiUpdater()
 
     def _generate_request_data(self, endpoint, variables=None, **kwargs):
+        # fmt: off - Turns off formatting for this block of code. Just for the readability purpose.
         url = util.generate_url(domain=Path.API_URL, url_path=endpoint)
         query_params = {"variables": json.dumps({**variables})}
         if kwargs:
-            features = json.dumps(util.generate_features(**kwargs))
-            query_params["features"] = features
+            features = FeatureSwitch().get_query_features(endpoint) or util.generate_features(**kwargs)
+            query_params["features"] = json.dumps(features)
+        # fmt: on   
         return url, query_params
 
     def _handle_pagination(self, url, query_params, end_cursor=None, data_path=None, total=None):
@@ -293,7 +295,7 @@ class TweeterPy:
         referer = 'tweet' if with_tweet_replies else random.choice(
             ['profile', 'home'])
         variables = {"focalTweetId": tweet_id, "referrer": referer, "with_rux_injections": False, "includePromotedContent": True,
-                     "withCommunity": True, "withQuickPromoteEligibilityTweetFields": True, "withBirdwatchNotes": False,
+                     "withCommunity": True, "withQuickPromoteEligibilityTweetFields": True, "withArticleRichContent": False, "withBirdwatchNotes": False,
                      "withVoice": True, "withV2Timeline": True}
         url, query_params = self._generate_request_data(
             Path.TWEET_DETAILS_ENDPOINT, variables, additional_features=True)
