@@ -285,12 +285,29 @@ get_user_timeline(end_cursor=None, total=None)
 ## Get Tweets from a Tweet List (Tweet Lists are Available on Twitter Mobile App)
 
 ```python
-get_list_tweets(list_id, end_cursor=None, total=None):
+get_list_tweets(list_id, end_cursor=None, total=None)
     """
         Get tweets from a Tweets List.
 
         Args:
             list_id (str/int): Tweets List ID. (Can be extracted from twitter mobile app.)
+            end_cursor (str, optional): Last endcursor point. (To start from where you left off last time). Defaults to None.
+            total (int, optional): Total(Max) number of results you want to get. If None, extracts all results. Defaults to None.
+
+        Returns:
+            dict: Returns data, cursor_endpoint, has_next_page
+    """
+```
+
+## Get Tweets from a Topic Page.
+
+```python
+get_topic_tweets(topic_id, end_cursor=None, total=None)
+    """
+        Get tweets from a Topic.
+
+        Args:
+            topic_id (str/int): Topic ID.
             end_cursor (str, optional): Last endcursor point. (To start from where you left off last time). Defaults to None.
             total (int, optional): Total(Max) number of results you want to get. If None, extracts all results. Defaults to None.
 

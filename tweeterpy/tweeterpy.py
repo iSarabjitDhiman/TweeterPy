@@ -379,6 +379,24 @@ class TweeterPy:
                      'timeline', 'instructions')
         return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
 
+    def get_topic_tweets(self, topic_id, end_cursor=None, total=None):
+        """Get tweets from a Topic.
+
+        Args:
+            topic_id (str/int): Topic ID.
+            end_cursor (str, optional): Last endcursor point. (To start from where you left off last time). Defaults to None.
+            total (int, optional): Total(Max) number of results you want to get. If None, extracts all results. Defaults to None.
+
+        Returns:
+            dict: Returns data, cursor_endpoint, has_next_page
+        """
+        variables = {"rest_id": topic_id, "count": 100}
+        url, query_params = self._generate_request_data(
+            Path.TOPIC_TWEETS_ENDPOINT, variables, additional_features=True)
+        data_path = ('data', 'topic_by_rest_id', 'topic_page',
+                     'body', 'timeline', 'instructions')
+        return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
+
     def search(self, search_query, end_cursor=None, total=None, search_filter=None):
         """Get search results.
 
