@@ -229,6 +229,21 @@ class TweeterPy:
         response = make_request(url, params=query_params)
         return response['data']['user']['result']
 
+    def get_multiple_users_data(self, user_ids):
+        """Get user information of multiple twitter users.
+
+        Args:
+            user_ids (list): List of twitter users' IDs.
+
+        Returns:
+            list: Multiple users data.
+        """
+        variables = {"userIds": user_ids}
+        url, query_params = self._generate_request_data(
+            Path.MULTIPLE_USERS_DATA_ENDPOINT, variables, default_features=True)
+        response = make_request(url, params=query_params)
+        return response['data']['users']
+
     def get_user_tweets(self, user_id, with_replies=False, end_cursor=None, total=None):
         """Get Tweets from a user's profile.
 
@@ -346,20 +361,23 @@ class TweeterPy:
         data_path = ('data', 'home', 'home_timeline_urt', 'instructions')
         return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
 
-    def get_multiple_users_data(self, user_ids):
-        """Get user information of multiple twitter users.
+    def get_list_tweets(self, list_id, end_cursor=None, total=None):
+        """Get tweets from a Tweets List.
 
         Args:
-            user_ids (list): List of twitter users' IDs.
+            list_id (str/int): Tweets List ID. (Can be extracted from twitter mobile app.)
+            end_cursor (str, optional): Last endcursor point. (To start from where you left off last time). Defaults to None.
+            total (int, optional): Total(Max) number of results you want to get. If None, extracts all results. Defaults to None.
 
         Returns:
-            list: Multiple users data.
+            dict: Returns data, cursor_endpoint, has_next_page
         """
-        variables = {"userIds": user_ids}
+        variables = {"listId": list_id, "count": 100}
         url, query_params = self._generate_request_data(
-            Path.MULTIPLE_USERS_DATA_ENDPOINT, variables, default_features=True)
-        response = make_request(url, params=query_params)
-        return response['data']['users']
+            Path.TWEETS_LIST_ENDPOINT, variables, additional_features=True)
+        data_path = ('data', 'list', 'tweets_timeline',
+                     'timeline', 'instructions')
+        return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
 
     def search(self, search_query, end_cursor=None, total=None, search_filter=None):
         """Get search results.

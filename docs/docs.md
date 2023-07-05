@@ -174,6 +174,23 @@ get_user_data(username)
     """
 ```
 
+## Get Mutiple Users' Details
+
+```python
+get_multiple_users_data(user_ids)
+
+    """
+        Get user information of multiple twitter users.
+
+        Args:
+            user_ids (list): List of twitter users' IDs.
+
+        Returns:
+            list: Multiple users data.
+    """
+
+```
+
 ## Get User's Tweets
 
 ```python
@@ -265,21 +282,21 @@ get_user_timeline(end_cursor=None, total=None)
     """
 ```
 
-## Get Mutiple Users' Details
+## Get Tweets from a Tweet List (Tweet Lists are Available on Twitter Mobile App)
 
 ```python
-get_multiple_users_data(user_ids)
-
+get_list_tweets(list_id, end_cursor=None, total=None):
     """
-        Get user information of multiple twitter users.
+        Get tweets from a Tweets List.
 
         Args:
-            user_ids (list): List of twitter users' IDs.
+            list_id (str/int): Tweets List ID. (Can be extracted from twitter mobile app.)
+            end_cursor (str, optional): Last endcursor point. (To start from where you left off last time). Defaults to None.
+            total (int, optional): Total(Max) number of results you want to get. If None, extracts all results. Defaults to None.
 
         Returns:
-            list: Multiple users data.
+            dict: Returns data, cursor_endpoint, has_next_page
     """
-
 ```
 
 ## Perform a Search
