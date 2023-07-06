@@ -17,6 +17,7 @@ def make_request(url, session=None, method=None, max_retries=None, timeout=None,
         try:
             response_text = ""
             response = session.request(method, url, timeout=timeout, **kwargs)
+            api_limit_stats = util.check_api_rate_limits(response)
             soup = bs4.BeautifulSoup(response.content, "lxml")
             if "json" in response.headers["Content-Type"]:
                 return util.check_for_errors(response.json())
@@ -27,16 +28,14 @@ def make_request(url, session=None, method=None, max_retries=None, timeout=None,
         except KeyboardInterrupt:
             print("Keyboard Interruption...")
             return
-        except requests.exceptions.RequestException as error:
-            print(f"Retry No. ==> {retry_count}", end="\r")
-            if retry_count >= max_retries:
-                print(f"{error}\n{response_text}")
-                raise Exception(error)
         except Exception as error:
             print(f"Retry No. ==> {retry_count}", end="\r")
             if retry_count >= max_retries:
-                print(f"{error}\n{response_text}")
-                raise Exception(error)
+                print(f"{error}\n\n{response_text}\n")
+                if api_limit_stats.get('rate_limit_exhausted'):
+                    print(
+                        f"\033[91m Rate Limit Exceeded:\033[0m {api_limit_stats}")
+                raise error
 
 
 if __name__ == '__main__':

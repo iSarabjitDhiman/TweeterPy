@@ -1,3 +1,5 @@
+import datetime
+import time
 from urllib.parse import urljoin
 from .constants import Path
 from .constants import PUBLIC_TOKEN
@@ -70,6 +72,27 @@ def check_for_errors(response):
         raise Exception(error_message)
     # return response['flow_token'] # For manual Way
     return response
+
+
+def check_api_rate_limits(response):
+    # fmt:off - Code fomatting turned off
+    current_time = time.time()
+    api_requests_limit = response.headers.get('x-rate-limit-limit')
+    remaining_api_requests = response.headers.get('x-rate-limit-remaining')
+    limit_reset_timestamp = response.headers.get('x-rate-limit-reset')
+    if api_requests_limit is None:
+        return
+    api_requests_limit, remaining_api_requests, limit_reset_timestamp = map(int, [api_requests_limit, remaining_api_requests, limit_reset_timestamp])
+    limit_exhausted = True if remaining_api_requests == 0 else False
+    remaining_time_datetime_object = datetime.timedelta(seconds=limit_reset_timestamp - current_time)
+    # convert to human readable format
+    remaining_time = str(remaining_time_datetime_object).split(':')
+    remaining_time = f"{remaining_time[0]} Hours, {remaining_time[1]} Minutes, {float(remaining_time[2]):.2f} Seconds"
+    # fmt:on
+    api_limit_stats = {"total_limit": api_requests_limit, "remaining_requests_count": remaining_api_requests,
+                       "resets_after": remaining_time, "reset_after_datetime_object": remaining_time_datetime_object,
+                       "rate_limit_exhausted": limit_exhausted}
+    return api_limit_stats
 
 
 if __name__ == "__main__":
