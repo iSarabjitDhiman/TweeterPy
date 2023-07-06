@@ -104,6 +104,13 @@ class TweeterPy:
         response = self.session.get(url, params=query).json()
         return response
 
+    def login_decorator(original_function):
+        def wrapper(self, *args, **kwargs):
+            if not self.logged_in():
+                self.login()
+            return original_function(self, *args, **kwargs)
+        return wrapper
+
     def generate_session(self, auth_token=None):
         """Generate a twitter session. With/Without Login.
 
@@ -182,6 +189,7 @@ class TweeterPy:
         TaskHandler().login(username, password)
         util.generate_headers(session=self.session)
 
+    @login_decorator
     def get_user_id(self, username):
         """Get user ID of a twitter user.
 
@@ -198,6 +206,7 @@ class TweeterPy:
         response = make_request(url, params=query_params)
         return response['data']['user_result_by_screen_name']['result']['rest_id']
 
+    @login_decorator
     def get_user_info(self, user_id):
         """Extracts user details like username, userid, bio, website, follower/following count etc.
 
@@ -214,6 +223,7 @@ class TweeterPy:
         response = make_request(url, params=query_params)
         return response['data']['user']['result']
 
+    @login_decorator
     def get_user_data(self, username):
         """Extracts user details as same as get_user_info method. Except this one returns info about blue tick verification badge as well.
 
@@ -229,6 +239,7 @@ class TweeterPy:
         response = make_request(url, params=query_params)
         return response['data']['user']['result']
 
+    @login_decorator
     def get_multiple_users_data(self, user_ids):
         """Get user information of multiple twitter users.
 
@@ -244,6 +255,7 @@ class TweeterPy:
         response = make_request(url, params=query_params)
         return response['data']['users']
 
+    @login_decorator
     def get_user_tweets(self, user_id, with_replies=False, end_cursor=None, total=None):
         """Get Tweets from a user's profile.
 
@@ -272,6 +284,7 @@ class TweeterPy:
                      'timeline', 'instructions')
         return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
 
+    @login_decorator
     def get_user_media(self, user_id, end_cursor=None, total=None):
         """Get media from a user's profile.
 
@@ -292,6 +305,7 @@ class TweeterPy:
                      'timeline', 'instructions')
         return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
 
+    @login_decorator
     def get_tweet(self, tweet_id, with_tweet_replies=False, end_cursor=None, total=None):
         """Get Tweets from a user's profile.
 
@@ -320,6 +334,7 @@ class TweeterPy:
             return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
         return make_request(url, params=query_params)
 
+    @login_decorator
     def get_liked_tweets(self, user_id, end_cursor=None, total=None):
         """Get Tweets liked by a user.
 
@@ -342,6 +357,7 @@ class TweeterPy:
                      'timeline', 'instructions')
         return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
 
+    @login_decorator
     def get_user_timeline(self, end_cursor=None, total=None):
         """Get tweets from home timeline (Home Page).
 
@@ -361,6 +377,7 @@ class TweeterPy:
         data_path = ('data', 'home', 'home_timeline_urt', 'instructions')
         return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
 
+    @login_decorator
     def get_list_tweets(self, list_id, end_cursor=None, total=None):
         """Get tweets from a Tweets List.
 
@@ -379,6 +396,7 @@ class TweeterPy:
                      'timeline', 'instructions')
         return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
 
+    @login_decorator
     def get_topic_tweets(self, topic_id, end_cursor=None, total=None):
         """Get tweets from a Topic.
 
@@ -397,6 +415,7 @@ class TweeterPy:
                      'body', 'timeline', 'instructions')
         return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
 
+    @login_decorator
     def search(self, search_query, end_cursor=None, total=None, search_filter=None):
         """Get search results.
 
@@ -419,6 +438,7 @@ class TweeterPy:
                      'search_timeline', 'timeline', 'instructions')
         return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
 
+    @login_decorator
     def get_friends(self, user_id, follower=False, following=False, mutual_follower=False, end_cursor=None, total=None):
         """Get User's follower, followings or mutual followers.
 
@@ -448,6 +468,7 @@ class TweeterPy:
                      'timeline', 'instructions')
         return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
 
+    @login_decorator
     def get_profile_business_category(self, user_id):
         """Extracts profile category of a Professional/Business twitter profile. Can also be extracted from get_user_info and get_user_data methods.
 
@@ -464,6 +485,7 @@ class TweeterPy:
         response = make_request(url, params=query_params)
         return response
 
+    @login_decorator
     def get_tweet_likes(self, tweet_id, end_cursor=None, total=None):
         """Returns data about the users who liked the given tweet post.
 
@@ -477,13 +499,14 @@ class TweeterPy:
         """
         if not self.logged_in():
             self.login()
-        variables = {"tweetId": tweet_id, "count": 100,
+        variables = {"tweetId": str(tweet_id), "count": 100,
                      "includePromotedContent": True}
         url, query_params = self._generate_request_data(
             Path.TWEET_LIKES_ENDPOINT, variables, additional_features=True)
         data_path = ('data', 'favoriters_timeline', 'timeline', 'instructions')
         return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
 
+    @login_decorator
     def get_retweeters(self, tweet_id, end_cursor=None, total=None):
         """Returs data about the users who retweeted the given tweet post.
 
@@ -497,7 +520,7 @@ class TweeterPy:
         """
         if not self.logged_in():
             self.login()
-        variables = {"tweetId": tweet_id, "count": 100,
+        variables = {"tweetId": str(tweet_id), "count": 100,
                      "includePromotedContent": True}
         url, query_params = self._generate_request_data(
             Path.RETWEETED_BY_ENDPOINT, variables, additional_features=True)
