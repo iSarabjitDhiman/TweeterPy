@@ -228,8 +228,7 @@ class TweeterPy:
             pending_users = [user for user in username if user not in user_ids]
             response = self._generate_request_data(
                 Path.USER_ID_ENDPOINT, custom_variables={"screen_name": pending_users})
-            user_ids = [*user_ids, [reduce(dict.get, ('data', 'user_result_by_screen_name',
-                                           'result', 'rest_id'), user) for user in response]]
+            user_ids = [*user_ids, *util.find_nested_key(response, "rest_id")]
         return user_ids if len(user_ids) > 1 else user_ids[0] if user_ids else None
 
     @login_decorator
