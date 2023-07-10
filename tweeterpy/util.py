@@ -81,7 +81,7 @@ def check_api_rate_limits(response):
     remaining_api_requests = response.headers.get('x-rate-limit-remaining')
     limit_reset_timestamp = response.headers.get('x-rate-limit-reset')
     if api_requests_limit is None:
-        return
+        return None
     api_requests_limit, remaining_api_requests, limit_reset_timestamp = map(int, [api_requests_limit, remaining_api_requests, limit_reset_timestamp])
     limit_exhausted = True if remaining_api_requests == 0 else False
     remaining_time_datetime_object = datetime.timedelta(seconds=limit_reset_timestamp - current_time)

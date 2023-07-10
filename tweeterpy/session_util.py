@@ -1,5 +1,5 @@
 import pickle
-import requests
+import httpx
 import os
 from . import config
 
@@ -31,7 +31,7 @@ def _show_saved_sessions(directory_path=None):
 
 
 def save_session(filename=None, path=None, session=None):
-    if session is None or not isinstance(session, requests.Session):
+    if session is None or not isinstance(session, httpx.Client):
         if config._DEFAULT_SESSION:
             session = config._DEFAULT_SESSION
         else:
@@ -54,7 +54,7 @@ def load_session(file_path=None, session=None):
     with open(file_path, "rb") as file:
         headers, cookies = pickle.load(file)
     if session is None:
-        session = config._DEFAULT_SESSION or requests.Session()
+        session = config._DEFAULT_SESSION or httpx.Client()
     session.headers = headers
     session.cookies = cookies
     config._DEFAULT_SESSION = session
