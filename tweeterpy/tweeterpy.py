@@ -20,7 +20,7 @@ class TweeterPy:
         # update api endpoints
         ApiUpdater()
 
-    def _generate_request_data(self, endpoint, default_variables=None, custom_variables=None, url=None, method=None, return_payload=False, **kwargs):
+    def _generate_request_data(self, endpoint, default_variables=None, custom_variables=None, pagination=None, url=None, method=None, return_payload=False, **kwargs):
         # fmt: off - Turns off formatting for this block of code. Just for the readability purpose.
         method = method or "GET"
         default_variables = default_variables or {}
@@ -32,6 +32,7 @@ class TweeterPy:
             query_params.update({"features":json.dumps(features)})
         if custom_variables and isinstance(custom_variables,dict):
             key,values = custom_variables.popitem()
+            values = values[0] if isinstance(values,list) and len(values) == 1 else values
             if isinstance(values,list):
                 variables = [json.dumps(default_variables | {key:str(each_item)}) for each_item in values]
                 query_params = [query_params | {"variables":each_item} for each_item in variables]
@@ -45,61 +46,9 @@ class TweeterPy:
         # fmt: on   
         if return_payload:
             return request_payload
-        return self._handle_pagination(request_payload=request_payload)
-
-    def _handle_pagination(self, url=None, query_params=None, request_payload=None, end_cursor=None, data_path=None, total=None):
-        # fmt: off  - Turns off formatting for this block of code. Just for the readability purpose.
-        def filter_data(response):
-            filtered_data = []
-            for each_entry in response:
-                if each_entry['entryId'].startswith('cursor-top') or each_entry['entryId'].startswith('cursor-bottom'):
-                    continue
-                filtered_data.append(each_entry)
-                if total is not None and (len(data_container['data']) + len(filtered_data)) >= total:
-                    return filtered_data
-            return filtered_data
-
-        data_container = {"data": [],"cursor_endpoint": None, "has_next_page": True}
-        request_payload = request_payload or {"url": url, "params": query_params}
-        while data_container["has_next_page"]:
-            try:
-                if end_cursor:
-                    varaibles = json.loads(query_params['variables'])
-                    varaibles['cursor'] = end_cursor
-                    query_params['variables'] = json.dumps(varaibles)
-                response = make_request(request_payload=request_payload)
-                if not data_path:
-                    return response
-                data = [item for item in reduce(
-                    dict.get, data_path, response) if item['type'] == 'TimelineAddEntries'][0]['entries']
-                top_cursor = [
-                    entry for entry in data if entry['entryId'].startswith('cursor-top')]
-                if top_cursor:
-                    top_cursor = reduce(dict.get, ('content','value'),top_cursor[0]) or reduce(dict.get, ('content','itemContent','value'),end_cursor[0])
-                end_cursor = [
-                    entry for entry in data if entry['entryId'].startswith('cursor-bottom')]
-                if end_cursor:
-                    end_cursor = reduce(dict.get, ('content','value'),end_cursor[0]) or reduce(dict.get, ('content','itemContent','value'),end_cursor[0])
-                data_container['data'].extend(filter_data(data))
-
-                print(len(data_container['data']), end="\r")
-
-                if end_cursor:
-                    data_container['cursor_endpoint'] = end_cursor
-
-                if ((top_cursor and end_cursor) and len(data) == 2) or ((top_cursor or end_cursor) and len(data) == 1) or (not end_cursor):
-                    data_container["has_next_page"] = False
-
-                if not data_container["has_next_page"] or (total is not None and len(data_container['data']) >= total):
-                    return data_container
-            # fmt: on 
-            except ConnectionError as error:
-                print(error)
-                continue
-
-            except Exception as error:
-                print(error)
-                return data_container
+        if pagination:
+            request_payload.update({"pagination_data": pagination})
+        return make_request(request_payload=request_payload)
 
     @property
     def session(self):
@@ -273,7 +222,8 @@ class TweeterPy:
             list: Multiple users data.
         """
         variables = {"userIds": user_ids}
-        response = self._generate_request_data(
+        user_ids = self.get_user_id(user_ids)
+        return self._generate_request_data(
             Path.MULTIPLE_USERS_DATA_ENDPOINT, default_variables=variables, default_features=True)
 
     @login_decorator
@@ -299,8 +249,9 @@ class TweeterPy:
             variables['withCommunity'] = True
             query_endpoint = Path.USER_TWEETS_AND_REPLIES_ENDPOINT
             del variables['withQuickPromoteEligibilityTweetFields']
+        pagination_data = {"end_cursor": end_cursor, "total": total}
 
-        return self._generate_request_data(query_endpoint, default_variables=variables, custom_variables=variables_data, additional_features=True)
+        return self._generate_request_data(query_endpoint, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, additional_features=True)
 
     @login_decorator
     def get_user_media(self, user_id, end_cursor=None, total=None):
@@ -318,8 +269,9 @@ class TweeterPy:
         variables = {"count": 100, "includePromotedContent": False,
                      "withClientEventToken": False, "withBirdwatchNotes": False, "withVoice": True, "withV2Timeline": True}
         variables_data = {"userId": user_id}
+        pagination_data = {"end_cursor": end_cursor, "total": total}
         return self._generate_request_data(
-            Path.USER_MEDIA_ENDPOINT, default_variables=variables, custom_variables=variables_data, additional_features=True)
+            Path.USER_MEDIA_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, additional_features=True)
 
     @login_decorator
     def get_tweet(self, tweet_id, with_tweet_replies=False, end_cursor=None, total=None):
@@ -343,8 +295,9 @@ class TweeterPy:
                      "withCommunity": True, "withQuickPromoteEligibilityTweetFields": True, "withArticleRichContent": False, "withBirdwatchNotes": False,
                      "withVoice": True, "withV2Timeline": True}
         variables_data = {"focalTweetId": tweet_id}
-        handle_pagination = True if with_tweet_replies else False
-        return self._generate_request_data(Path.TWEET_DETAILS_ENDPOINT, default_variables=variables, custom_variables=variables_data, additional_features=True)
+        pagination_data = {"end_cursor": end_cursor,
+                           "total": total} if with_tweet_replies else {}
+        return self._generate_request_data(Path.TWEET_DETAILS_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, additional_features=True)
 
     @login_decorator
     def get_liked_tweets(self, user_id, end_cursor=None, total=None):
@@ -364,7 +317,8 @@ class TweeterPy:
         variables = {"count": 100, "includePromotedContent": False,
                      "withClientEventToken": False, "withBirdwatchNotes": False, "withVoice": True, "withV2Timeline": True}
         variables_data = {"userId": user_id}
-        return self._generate_request_data(Path.LIKED_TWEETS_ENDPOINT, default_variables=variables, custom_variables=variables_data, additional_features=True)
+        pagination_data = {"end_cursor": end_cursor, "total": total}
+        return self._generate_request_data(Path.LIKED_TWEETS_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, additional_features=True)
 
     @login_decorator
     def get_user_timeline(self, end_cursor=None, total=None):
@@ -381,8 +335,9 @@ class TweeterPy:
             self.login()
         variables = {"count": 40, "includePromotedContent": True,
                      "latestControlAvailable": True, "withCommunity": True}
+        pagination_data = {"end_cursor": end_cursor, "total": total}
         return self._generate_request_data(
-            Path.HOME_TIMELINE_ENDPOINT, default_variables=variables, additional_features=True)
+            Path.HOME_TIMELINE_ENDPOINT, default_variables=variables, pagination=pagination_data, additional_features=True)
 
     @login_decorator
     def get_list_tweets(self, list_id, end_cursor=None, total=None):
@@ -398,8 +353,9 @@ class TweeterPy:
         """
         variables = {"count": 100}
         variables_data = {"listId": list_id}
+        pagination_data = {"end_cursor": end_cursor, "total": total}
         return self._generate_request_data(
-            Path.TWEETS_LIST_ENDPOINT, default_variables=variables, custom_variables=variables_data, additional_features=True)
+            Path.TWEETS_LIST_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, additional_features=True)
 
     @login_decorator
     def get_topic_tweets(self, topic_id, end_cursor=None, total=None):
@@ -415,8 +371,9 @@ class TweeterPy:
         """
         variables = {"count": 100}
         variables_data = {"rest_id": topic_id}
+        pagination_data = {"end_cursor": end_cursor, "total": total}
         return self._generate_request_data(
-            Path.TOPIC_TWEETS_ENDPOINT, default_variables=variables, custom_variables=variables_data, additional_features=True)
+            Path.TOPIC_TWEETS_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, additional_features=True)
 
     @login_decorator
     def search(self, search_query, end_cursor=None, total=None, search_filter=None):
@@ -435,9 +392,10 @@ class TweeterPy:
         # Latest , Top , People , Photos , Videos (Product) - Filter
         variables = {"count": 20,
                      "querySource": "hashtag_click", "product": search_filter}
-        variables_data = {"rawQuery": search_query, }
+        variables_data = {"rawQuery": search_query}
+        pagination_data = {"end_cursor": end_cursor, "total": total}
         return self._generate_request_data(
-            Path.SEARCH_ENDPOINT, default_variables=variables, custom_variables=variables_data, additional_features=True)
+            Path.SEARCH_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, additional_features=True)
 
     @login_decorator
     def get_friends(self, user_id, follower=False, following=False, mutual_follower=False, end_cursor=None, total=None):
@@ -464,8 +422,9 @@ class TweeterPy:
         variables = {"count": 100,
                      "includePromotedContent": False}
         variables_data = {"userId": user_id}
+        pagination_data = {"end_cursor": end_cursor, "total": total}
         return self._generate_request_data(
-            query_path, default_variables=variables, custom_variables=variables_data, additional_features=True)
+            query_path, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, additional_features=True)
 
     @login_decorator
     def get_profile_business_category(self, user_id):
@@ -499,8 +458,9 @@ class TweeterPy:
         variables = {"count": 100,
                      "includePromotedContent": True}
         variables_data = {"tweetId": tweet_id}
+        pagination_data = {"end_cursor": end_cursor, "total": total}
         return self._generate_request_data(
-            Path.TWEET_LIKES_ENDPOINT, default_variables=variables, custom_variables=variables_data, additional_features=True)
+            Path.TWEET_LIKES_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, additional_features=True)
 
     @login_decorator
     def get_retweeters(self, tweet_id, end_cursor=None, total=None):
@@ -519,8 +479,9 @@ class TweeterPy:
         variables = {"count": 100,
                      "includePromotedContent": True}
         variables_data = {"tweetId": tweet_id}
+        pagination_data = {"end_cursor": end_cursor, "total": total}
         return self._generate_request_data(
-            Path.RETWEETED_BY_ENDPOINT, default_variables=variables, custom_variables=variables_data, additional_features=True)
+            Path.RETWEETED_BY_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, additional_features=True)
 
 
 if __name__ == "__main__":
