@@ -3,6 +3,7 @@ Brotli==1.0.9
 bs4==0.0.1
 certifi==2023.5.7
 charset-normalizer==3.1.0
+httpx==0.24.1
 idna==3.4
 Js2Py==0.74
 lxml==4.9.2

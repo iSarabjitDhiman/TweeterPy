@@ -2,7 +2,6 @@ import httpx
 import json
 import random
 import getpass
-from functools import reduce
 
 from .api_util import ApiUpdater
 from .constants import Path, FeatureSwitch
