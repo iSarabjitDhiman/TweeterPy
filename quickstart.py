@@ -12,6 +12,8 @@ def main():
     # print(twitter.get_user_tweets('elonmusk', total=200))
     # print(twitter.get_user_media('elonmusk', total=100))
 
+    # if you want to extract data for multiple users/tweets etc. Check documentation for async version to make multiple requests at a single time.
+
 
 if __name__ == "__main__":
     main()

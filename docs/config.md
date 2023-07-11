@@ -21,13 +21,6 @@ print(twitter.get_user_id('elonmusk'))
 
 ```
 
-## Retries Limit
-
-```python
-# Maximun number of retries for each request
-config.MAX_RETRIES = 3
-```
-
 ## Request Timeout
 
 ```python

@@ -39,6 +39,35 @@ print(twitter.get_user_id('elonmusk'))
 
 ```
 
+> ### Example -- Async Version
+
+```python
+from tweeterpy import TweeterPy
+from tweeterpy import util
+
+twitter = TweeterPy()
+
+# check limits before start using it.
+# To check the api rate limits of an endpoint, just set return_rate_limit=True. It works with all methods, below are a few examples.
+twitter.get_user_id('',return_rate_limit=True)
+twitter.get_friends('',follower=True,return_rate_limit=True)
+twitter.get_friends('',following=True,return_rate_limit=True)
+
+# now start using it, its as same as the regular version except it take a list as input.
+data = twitter.get_user_id(['elonmusk','user1','user2','user3'])
+followers = twitter.get_friends(['elonmusk','user1','user2','user3'],followers=True,total=50)
+
+# if you already have a list of user Ids, I recommend you to use get_multiple_users_data. The get_multiple_users_data method uses a native endpoint which returns user info without making multiple requests.
+# Otherwise you can use get_user_info if you have a list of just usernames.
+user_data = twitter.get_user_info(['elonmusk','user1','user2','user3'])
+
+# you can also filter the returned data with find_nested_key function from util module.
+# Just pass the key to be retrieved
+user_ids = util.find_nested_key(data,"screen_name")
+follower_list = username_list = util.find_nested_key(followers,"screen_name")
+
+```
+
 ## Check If User is Logged In.
 
 ```python
