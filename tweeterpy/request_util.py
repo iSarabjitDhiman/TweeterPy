@@ -36,6 +36,9 @@ def make_request(url=None, method=None, params=None, request_payload=None, sessi
     ssl_verify = False if proxies else True
     concurrent_requests = False
     session = session or config._DEFAULT_SESSION or httpx.Client(follow_redirects=True, timeout=timeout, proxies=proxies, verify=ssl_verify)
+    return_rate_limit = kwargs.pop("return_rate_limit",False)
+    if return_rate_limit:
+        return validate_response(session.request(method=request_payload["method"],url=request_payload["url"]),return_rate_limit)
     if request_payload:
         concurrent_requests = True if request_payload.get("pagination_data") or isinstance(request_payload,list) or (isinstance(request_payload,dict) and isinstance(request_payload.get("params"),list)) else False
         if concurrent_requests:
@@ -103,10 +106,13 @@ async def _handle_pagination(url=None, query_params=None, request_payload=None,s
             return data_container
 
 
-def validate_response(response):
+def validate_response(response, return_rate_limit=False):
     try:
         response_text = ""
         api_limit_stats = util.check_api_rate_limits(response)
+        if return_rate_limit:
+            print(api_limit_stats)
+            return
         soup = bs4.BeautifulSoup(response.content, "lxml")
         if "json" in response.headers["Content-Type"]:
             return util.check_for_errors(response.json())

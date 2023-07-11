@@ -20,15 +20,18 @@ class TweeterPy:
         # update api endpoints
         ApiUpdater()
 
-    def _generate_request_data(self, endpoint, default_variables=None, custom_variables=None, pagination=None, url=None, method=None, return_payload=False, **kwargs):
+    def get_rate_limits(self, func):
+        return callable(getattr(self, str(func))("")(return_rate_limit=True))
+
+    def _generate_request_data(self, endpoint, default_variables=None, custom_variables=None, pagination=None, features=None, return_payload=False, **kwargs):
         # fmt: off - Turns off formatting for this block of code. Just for the readability purpose.
-        method = method or "GET"
+        method = kwargs.pop("method",None) or "GET"
         default_variables = default_variables or {}
-        url = url or Path.API_URL
+        url = kwargs.pop("url",None) or Path.API_URL
         url = util.generate_url(domain=url, url_path=endpoint)
         query_params = {}
-        if kwargs:
-            features = FeatureSwitch().get_query_features(endpoint) or util.generate_features(**kwargs)
+        if features:
+            features = FeatureSwitch().get_query_features(endpoint) or util.generate_features(features)
             query_params.update({"features":json.dumps(features)})
         if custom_variables and isinstance(custom_variables,dict):
             key,values = custom_variables.popitem()
@@ -48,7 +51,7 @@ class TweeterPy:
             return request_payload
         if pagination:
             request_payload.update({"pagination_data": pagination})
-        return make_request(request_payload=request_payload)
+        return make_request(request_payload=request_payload, **kwargs)
 
     @property
     def session(self):
@@ -160,7 +163,7 @@ class TweeterPy:
         util.generate_headers(session=self.session)
 
     @login_decorator
-    def get_user_id(self, username):
+    def get_user_id(self, username, **kwargs):
         """Get user ID of a twitter user.
 
         Args:
@@ -176,12 +179,12 @@ class TweeterPy:
         if len(user_ids) != len(username):
             pending_users = [user for user in username if user not in user_ids]
             response = self._generate_request_data(
-                Path.USER_ID_ENDPOINT, custom_variables={"screen_name": pending_users})
+                Path.USER_ID_ENDPOINT, custom_variables={"screen_name": pending_users}, **kwargs)
             user_ids = [*user_ids, *util.find_nested_key(response, "rest_id")]
         return user_ids if len(user_ids) > 1 else user_ids[0] if user_ids else None
 
     @login_decorator
-    def get_user_info(self, user_id):
+    def get_user_info(self, user_id, **kwargs):
         """Extracts user details like username, userid, bio, website, follower/following count etc.
 
         Args:
@@ -194,10 +197,10 @@ class TweeterPy:
         variables = {"withSafetyModeUserFields": True}
         variables_data = {"userId": user_id}
         return self._generate_request_data(
-            Path.USER_INFO_ENDPOINT, default_variables=variables, custom_variables=variables_data, user_data_features=True)
+            Path.USER_INFO_ENDPOINT, default_variables=variables, custom_variables=variables_data, features="user_data", **kwargs)
 
     @login_decorator
-    def get_user_data(self, username):
+    def get_user_data(self, username, **kwargs):
         """Extracts user details as same as get_user_info method. Except this one returns info about blue tick verification badge as well.
 
         Args:
@@ -209,10 +212,10 @@ class TweeterPy:
         variables = {"withSafetyModeUserFields": True}
         variables_data = {"screen_name": username}
         return self._generate_request_data(
-            Path.USER_DATA_ENDPOINT, default_variables=variables, custom_variables=variables_data, user_info_feautres=True)
+            Path.USER_DATA_ENDPOINT, default_variables=variables, custom_variables=variables_data, features="user_info", **kwargs)
 
     @login_decorator
-    def get_multiple_users_data(self, user_ids):
+    def get_multiple_users_data(self, user_ids, **kwargs):
         """Get user information of multiple twitter users.
 
         Args:
@@ -224,10 +227,10 @@ class TweeterPy:
         variables = {"userIds": user_ids}
         user_ids = self.get_user_id(user_ids)
         return self._generate_request_data(
-            Path.MULTIPLE_USERS_DATA_ENDPOINT, default_variables=variables, default_features=True)
+            Path.MULTIPLE_USERS_DATA_ENDPOINT, default_variables=variables, default_features=True, **kwargs)
 
     @login_decorator
-    def get_user_tweets(self, user_id, with_replies=False, end_cursor=None, total=None):
+    def get_user_tweets(self, user_id, with_replies=False, end_cursor=None, total=None, **kwargs):
         """Get Tweets from a user's profile.
 
         Args:
@@ -251,10 +254,10 @@ class TweeterPy:
             del variables['withQuickPromoteEligibilityTweetFields']
         pagination_data = {"end_cursor": end_cursor, "total": total}
 
-        return self._generate_request_data(query_endpoint, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, additional_features=True)
+        return self._generate_request_data(query_endpoint, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, features="additional", **kwargs)
 
     @login_decorator
-    def get_user_media(self, user_id, end_cursor=None, total=None):
+    def get_user_media(self, user_id, end_cursor=None, total=None, **kwargs):
         """Get media from a user's profile.
 
         Args:
@@ -271,10 +274,10 @@ class TweeterPy:
         variables_data = {"userId": user_id}
         pagination_data = {"end_cursor": end_cursor, "total": total}
         return self._generate_request_data(
-            Path.USER_MEDIA_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, additional_features=True)
+            Path.USER_MEDIA_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, features="additional", **kwargs)
 
     @login_decorator
-    def get_tweet(self, tweet_id, with_tweet_replies=False, end_cursor=None, total=None):
+    def get_tweet(self, tweet_id, with_tweet_replies=False, end_cursor=None, total=None, **kwargs):
         """Get Tweets from a user's profile.
 
         Args:
@@ -297,10 +300,10 @@ class TweeterPy:
         variables_data = {"focalTweetId": tweet_id}
         pagination_data = {"end_cursor": end_cursor,
                            "total": total} if with_tweet_replies else {}
-        return self._generate_request_data(Path.TWEET_DETAILS_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, additional_features=True)
+        return self._generate_request_data(Path.TWEET_DETAILS_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, features="additional", **kwargs)
 
     @login_decorator
-    def get_liked_tweets(self, user_id, end_cursor=None, total=None):
+    def get_liked_tweets(self, user_id, end_cursor=None, total=None, **kwargs):
         """Get Tweets liked by a user.
 
         Args:
@@ -318,10 +321,10 @@ class TweeterPy:
                      "withClientEventToken": False, "withBirdwatchNotes": False, "withVoice": True, "withV2Timeline": True}
         variables_data = {"userId": user_id}
         pagination_data = {"end_cursor": end_cursor, "total": total}
-        return self._generate_request_data(Path.LIKED_TWEETS_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, additional_features=True)
+        return self._generate_request_data(Path.LIKED_TWEETS_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, features="additional", **kwargs)
 
     @login_decorator
-    def get_user_timeline(self, end_cursor=None, total=None):
+    def get_user_timeline(self, end_cursor=None, total=None, **kwargs):
         """Get tweets from home timeline (Home Page).
 
         Args:
@@ -337,10 +340,10 @@ class TweeterPy:
                      "latestControlAvailable": True, "withCommunity": True}
         pagination_data = {"end_cursor": end_cursor, "total": total}
         return self._generate_request_data(
-            Path.HOME_TIMELINE_ENDPOINT, default_variables=variables, pagination=pagination_data, additional_features=True)
+            Path.HOME_TIMELINE_ENDPOINT, default_variables=variables, pagination=pagination_data, features="additional", **kwargs)
 
     @login_decorator
-    def get_list_tweets(self, list_id, end_cursor=None, total=None):
+    def get_list_tweets(self, list_id, end_cursor=None, total=None, **kwargs):
         """Get tweets from a Tweets List.
 
         Args:
@@ -355,10 +358,10 @@ class TweeterPy:
         variables_data = {"listId": list_id}
         pagination_data = {"end_cursor": end_cursor, "total": total}
         return self._generate_request_data(
-            Path.TWEETS_LIST_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, additional_features=True)
+            Path.TWEETS_LIST_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, features="additional", **kwargs)
 
     @login_decorator
-    def get_topic_tweets(self, topic_id, end_cursor=None, total=None):
+    def get_topic_tweets(self, topic_id, end_cursor=None, total=None, **kwargs):
         """Get tweets from a Topic.
 
         Args:
@@ -373,10 +376,10 @@ class TweeterPy:
         variables_data = {"rest_id": topic_id}
         pagination_data = {"end_cursor": end_cursor, "total": total}
         return self._generate_request_data(
-            Path.TOPIC_TWEETS_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, additional_features=True)
+            Path.TOPIC_TWEETS_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, features="additional", **kwargs)
 
     @login_decorator
-    def search(self, search_query, end_cursor=None, total=None, search_filter=None):
+    def search(self, search_query, end_cursor=None, total=None, search_filter=None, **kwargs):
         """Get search results.
 
         Args:
@@ -395,10 +398,10 @@ class TweeterPy:
         variables_data = {"rawQuery": search_query}
         pagination_data = {"end_cursor": end_cursor, "total": total}
         return self._generate_request_data(
-            Path.SEARCH_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, additional_features=True)
+            Path.SEARCH_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, features="additional", **kwargs)
 
     @login_decorator
-    def get_friends(self, user_id, follower=False, following=False, mutual_follower=False, end_cursor=None, total=None):
+    def get_friends(self, user_id, follower=False, following=False, mutual_follower=False, end_cursor=None, total=None, **kwargs):
         """Get User's follower, followings or mutual followers.
 
         Args:
@@ -424,10 +427,10 @@ class TweeterPy:
         variables_data = {"userId": user_id}
         pagination_data = {"end_cursor": end_cursor, "total": total}
         return self._generate_request_data(
-            query_path, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, additional_features=True)
+            query_path, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, features="additional", **kwargs)
 
     @login_decorator
-    def get_profile_business_category(self, user_id):
+    def get_profile_business_category(self, user_id, **kwargs):
         """Extracts profile category of a Professional/Business twitter profile. Can also be extracted from get_user_info and get_user_data methods.
 
         Args:
@@ -439,10 +442,10 @@ class TweeterPy:
         user_id = self.get_user_id(user_id)
         variables_data = {"rest_id": user_id}
         return self._generate_request_data(
-            Path.PROFILE_CATEGORY_ENDPOINT, custom_variables=variables_data)
+            Path.PROFILE_CATEGORY_ENDPOINT, custom_variables=variables_data, **kwargs)
 
     @login_decorator
-    def get_tweet_likes(self, tweet_id, end_cursor=None, total=None):
+    def get_tweet_likes(self, tweet_id, end_cursor=None, total=None, **kwargs):
         """Returns data about the users who liked the given tweet post.
 
         Args:
@@ -460,10 +463,10 @@ class TweeterPy:
         variables_data = {"tweetId": tweet_id}
         pagination_data = {"end_cursor": end_cursor, "total": total}
         return self._generate_request_data(
-            Path.TWEET_LIKES_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, additional_features=True)
+            Path.TWEET_LIKES_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, features="additional", **kwargs)
 
     @login_decorator
-    def get_retweeters(self, tweet_id, end_cursor=None, total=None):
+    def get_retweeters(self, tweet_id, end_cursor=None, total=None, **kwargs):
         """Returs data about the users who retweeted the given tweet post.
 
         Args:
@@ -481,7 +484,7 @@ class TweeterPy:
         variables_data = {"tweetId": tweet_id}
         pagination_data = {"end_cursor": end_cursor, "total": total}
         return self._generate_request_data(
-            Path.RETWEETED_BY_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, additional_features=True)
+            Path.RETWEETED_BY_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, features="additional", **kwargs)
 
 
 if __name__ == "__main__":

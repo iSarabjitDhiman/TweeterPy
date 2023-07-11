@@ -32,22 +32,21 @@ def generate_headers(session=None):
     return headers
 
 
-def generate_features(default_features=True, user_data_features=False, user_info_feautres=False, additional_features=False):
+def generate_features(get_features=None):
     features = {}
-    if default_features:
+    if not get_features:
         default_features = {"responsive_web_graphql_exclude_directive_enabled": True, "verified_phone_label_enabled": True,
                             "responsive_web_graphql_skip_user_profile_image_extensions_enabled": False,
                             "responsive_web_graphql_timeline_navigation_enabled": True}
         features.update(default_features)
-
-    if user_data_features or user_info_feautres:
+    if get_features in ["user_data", "user_info"]:
         features.update({"hidden_profile_likes_enabled": False, "highlights_tweets_tab_ui_enabled": True,
                          "creator_subscriptions_tweet_preview_api_enabled": True})
-        if user_info_feautres:
+        if get_features == "user_info":
             features.update(
                 {"subscriptions_verification_info_verified_since_enabled": True})
 
-    if additional_features:
+    if get_features == "additional":
         features.update({"rweb_lists_timeline_redesign_enabled": True, "creator_subscriptions_tweet_preview_api_enabled": True, "tweetypie_unmention_optimization_enabled": True,
                          "responsive_web_edit_tweet_api_enabled": True, "graphql_is_translatable_rweb_tweet_is_translatable_enabled": True, "view_counts_everywhere_api_enabled": True,
                          "longform_notetweets_consumption_enabled": True, "responsive_web_twitter_article_tweet_consumption_enabled": False, "tweet_awards_web_tipping_enabled": False,
