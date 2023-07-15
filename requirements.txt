@@ -8,6 +8,7 @@ idna==3.4
 Js2Py==0.74
 lxml==4.9.2
 pyjsparser==2.7.1
+python-dateutil==2.8.2
 requests==2.31.0
 six==1.16.0
 soupsieve==2.4.1

@@ -2,9 +2,11 @@ import httpx
 import asyncio
 import bs4
 import json
+import datetime
 from . import util
 from . import config
 from functools import reduce
+from dateutil.parser import parse
 
 
 def make_request(url=None, method=None, params=None, request_payload=None, session=None, timeout=None, **kwargs):
@@ -50,19 +52,34 @@ def make_request(url=None, method=None, params=None, request_payload=None, sessi
         request_payload = {"method":method,"url":url,"params":params} | kwargs
     return make_regular_request(request_payload)
 
-async def _handle_pagination(url=None, query_params=None, request_payload=None,session=None,end_cursor=None,total=None,**kwargs):
+async def _handle_pagination(url=None, query_params=None, request_payload=None, session=None, end_cursor=None, total=None, **kwargs):
         # fmt: off  - Turns off formatting for this block of code. Just for the readability purpose.
     def filter_data(response):
         filtered_data = []
         for each_entry in response:
             if each_entry['entryId'].startswith('cursor-top') or each_entry['entryId'].startswith('cursor-bottom'):
                 continue
+            created_at = util.find_nested_key(each_entry,"tweet_results")[0] if util.find_nested_key(each_entry,"tweet_results") else {}
+            created_at = created_at.get("result",{}).get("legacy",{}).get("created_at",None)
+            created_at = parse(created_at) if created_at else None
+            # print(created_at,each_entry['entryId'])
+            if created_at and from_date:
+                if created_at <= from_date.replace(tzinfo=created_at.tzinfo):
+                    if each_entry['entryId'].startswith("tweet"):
+                        data_container['fetch_more'] = False
+                    continue
+            if created_at and to_date:
+                if created_at >= to_date.replace(tzinfo=created_at.tzinfo):
+                    continue
             filtered_data.append(each_entry)
             if total is not None and (len(data_container['data']) + len(filtered_data)) >= total:
                 return filtered_data
         return filtered_data
 
     data_container = {"data": [],"cursor_endpoint": None, "has_next_page": True}
+    from_date,to_date = kwargs.pop("from_date",None), kwargs.pop("to_date", None)
+    from_date = parse(from_date) + datetime.timedelta(days=1) if from_date else None
+    to_date = parse(to_date) + datetime.timedelta(days=1) if to_date else None
     request_payload = request_payload or {"url": url, "params": query_params} | kwargs
     while data_container["has_next_page"]:
         try:
@@ -94,7 +111,7 @@ async def _handle_pagination(url=None, query_params=None, request_payload=None,s
             if ((top_cursor and end_cursor) and len(data) == 2) or ((top_cursor or end_cursor) and len(data) == 1) or (not end_cursor):
                 data_container["has_next_page"] = False
 
-            if not data_container["has_next_page"] or (total is not None and len(data_container['data']) >= total):
+            if not data_container["has_next_page"] or (total is not None and len(data_container['data']) >= total) or not data_container.pop('fetch_more',True):
                 return data_container
         # fmt: on 
         except ConnectionError as error:

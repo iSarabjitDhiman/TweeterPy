@@ -223,7 +223,7 @@ get_multiple_users_data(user_ids)
 ## Get User's Tweets
 
 ```python
-get_user_tweets(user_id, with_replies=False, end_cursor=None, total=None)
+get_user_tweets(user_id, with_replies=False, end_cursor=None, total=None,from_date=None, to_date=None)
 
     """
         Get Tweets from a user's profile.
@@ -233,6 +233,8 @@ get_user_tweets(user_id, with_replies=False, end_cursor=None, total=None)
             with_replies (bool, optional): Set to True if want to get the tweets user replied to, from user's profile page. Defaults to False.
             end_cursor (str, optional): Last endcursor point. (To start from where you left off last time). Defaults to None.
             total (int, optional): Total(Max) number of results you want to get. If None, extracts all results. Defaults to None.
+            from_date (str, optional): Though any format should work, human-readable are recommended - 1 June 2023 (To start fetching from a specified period of time). Defaults to None.
+            to_date (str, optional): Though any Format should work, human-readable are recommended - 10 June 2023 (Fetch til a specified period of time). Defaults to None.
 
         Returns:
             dict: Returns data, cursor_endpoint, has_next_page
@@ -242,7 +244,7 @@ get_user_tweets(user_id, with_replies=False, end_cursor=None, total=None)
 ## Get User Media Posts
 
 ```python
-get_user_media(user_id, end_cursor=None, total=None)
+get_user_media(user_id, end_cursor=None, total=None, from_date=None, to_date=None)
 
     """
         Get media from a user's profile.
@@ -251,6 +253,8 @@ get_user_media(user_id, end_cursor=None, total=None)
             user_id (int): User ID.
             end_cursor (str, optional): Last endcursor point. (To start from where you left off last time). Defaults to None.
             total (int, optional): Total(Max) number of results you want to get. If None, extracts all results. Defaults to None.
+            from_date (str, optional): Though any format should work, human-readable are recommended - 1 June 2023 (To start fetching from a specified period of time). Defaults to None.
+            to_date (str, optional): Though any Format should work, human-readable are recommended - 10 June 2023 (Fetch til a specified period of time). Defaults to None.
 
         Returns:
             dict: Returns data, cursor_endpoint, has_next_page

@@ -229,7 +229,7 @@ class TweeterPy:
             Path.MULTIPLE_USERS_DATA_ENDPOINT, default_variables=variables, default_features=True, **kwargs)
 
     @login_decorator
-    def get_user_tweets(self, user_id, with_replies=False, end_cursor=None, total=None, **kwargs):
+    def get_user_tweets(self, user_id, with_replies=False, end_cursor=None, total=None, from_date=None, to_date=None, **kwargs):
         """Get Tweets from a user's profile.
 
         Args:
@@ -237,6 +237,9 @@ class TweeterPy:
             with_replies (bool, optional): Set to True if want to get the tweets user replied to, from user's profile page. Defaults to False.
             end_cursor (str, optional): Last endcursor point. (To start from where you left off last time). Defaults to None.
             total (int, optional): Total(Max) number of results you want to get. If None, extracts all results. Defaults to None.
+            from_date (str, optional): Though any format should work, human-readable are recommended - 1 June 2023 (To start fetching from a specified period of time). Defaults to None.
+            to_date (str, optional): Though any Format should work, human-readable are recommended - 10 June 2023 (Fetch til a specified period of time). Defaults to None.
+
 
         Returns:
             dict: Returns data, cursor_endpoint, has_next_page
@@ -251,18 +254,21 @@ class TweeterPy:
             variables['withCommunity'] = True
             query_endpoint = Path.USER_TWEETS_AND_REPLIES_ENDPOINT
             del variables['withQuickPromoteEligibilityTweetFields']
-        pagination_data = {"end_cursor": end_cursor, "total": total}
+        pagination_data = {"end_cursor": end_cursor, "total": total,
+                           "from_date": from_date, "to_date": to_date}
 
         return self._generate_request_data(query_endpoint, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, features="additional", **kwargs)
 
     @login_decorator
-    def get_user_media(self, user_id, end_cursor=None, total=None, **kwargs):
+    def get_user_media(self, user_id, end_cursor=None, total=None, from_date=None, to_date=None, ** kwargs):
         """Get media from a user's profile.
 
         Args:
             user_id (int): User ID.
             end_cursor (str, optional): Last endcursor point. (To start from where you left off last time). Defaults to None.
             total (int, optional): Total(Max) number of results you want to get. If None, extracts all results. Defaults to None.
+            from_date (str, optional): Though any format should work, human-readable are recommended - 1 June 2023 (To start fetching from a specified period of time). Defaults to None.
+            to_date (str, optional): Though any Format should work, human-readable are recommended - 10 June 2023 (Fetch til a specified period of time). Defaults to None.
 
         Returns:
             dict: Returns data, cursor_endpoint, has_next_page
@@ -271,7 +277,8 @@ class TweeterPy:
         variables = {"count": 100, "includePromotedContent": False,
                      "withClientEventToken": False, "withBirdwatchNotes": False, "withVoice": True, "withV2Timeline": True}
         variables_data = {"userId": user_id}
-        pagination_data = {"end_cursor": end_cursor, "total": total}
+        pagination_data = {"end_cursor": end_cursor, "total": total,
+                           "from_date": from_date, "to_date": to_date}
         return self._generate_request_data(
             Path.USER_MEDIA_ENDPOINT, default_variables=variables, custom_variables=variables_data, pagination=pagination_data, features="additional", **kwargs)
 
