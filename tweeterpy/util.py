@@ -1,5 +1,6 @@
 import datetime
 import time
+from functools import reduce
 from urllib.parse import urljoin
 from .constants import Path
 from .constants import PUBLIC_TOKEN
@@ -101,7 +102,12 @@ def find_nested_key(dataset=None, nested_key=None):
                 for item in dataset:
                     get_nested_data(item, nested_key, placeholder)
             if isinstance(dataset, dict):
-                if nested_key in dataset.keys():
+                if isinstance(nested_key, tuple) and nested_key[0] in dataset.keys():
+                    placeholder.append(reduce(lambda data, key: data.get(
+                        key, {}), nested_key, dataset) or None)
+                    placeholder.remove(None) if None in placeholder else ''
+                    # placeholder.append(reduce(dict.get,nested_key,dataset))
+                if isinstance(nested_key, str) and nested_key in dataset.keys():
                     placeholder.append(dataset.get(nested_key))
                 for item in dataset.values():
                     get_nested_data(item, nested_key, placeholder)

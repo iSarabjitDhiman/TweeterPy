@@ -53,18 +53,44 @@ twitter.get_user_id('',return_rate_limit=True)
 twitter.get_friends('',follower=True,return_rate_limit=True)
 twitter.get_friends('',following=True,return_rate_limit=True)
 
+
 # now start using it, its as same as the regular version except it take a list as input.
 data = twitter.get_user_id(['elonmusk','user1','user2','user3'])
 followers = twitter.get_friends(['elonmusk','user1','user2','user3'],followers=True,total=50)
+
 
 # if you already have a list of user Ids, I recommend you to use get_multiple_users_data. The get_multiple_users_data method uses a native endpoint which returns user info without making multiple requests.
 # Otherwise you can use get_user_info if you have a list of just usernames.
 user_data = twitter.get_user_info(['elonmusk','user1','user2','user3'])
 
+
 # you can also filter the returned data with find_nested_key function from util module.
 # Just pass the key to be retrieved
+follower_username = util.find_nested_key(followers,"screen_name")
 user_ids = util.find_nested_key(data,"screen_name")
-follower_list = username_list = util.find_nested_key(followers,"screen_name")
+
+
+# NESTED KEYS AS A TUPLE
+
+# you can also give it direct keys' location as a tuple in a hierarchy order if you know exact locaction or if the dataset has multiple similar keys.
+
+user_tweets = twitter.get_user_tweets("elonmusk",total=50)
+# Now say if you want to get tweet creation time which is stored in created_at key.
+
+# you will usually do util.find_nested_key(user_tweets,"created_at") if you take a look at the dataset, there are multiple created_at keys. One is for tweet datetime and other is for user account creation time.
+
+"""
+This is the location to tweet creation time.
+user_tweets[0]['data'][0]['content']['itemContent']['tweet_results']['result']['legacy']['created_at']
+
+This is the location to user account creation time.
+user_tweets[0]['data'][0]['content']['itemContent']['tweet_results']['result']['core']['user_results']['result']['legacy']['created_at']
+"""
+# So we have to be a bit more specific with our nested_keys. We can pass it as a tuple.
+
+user_account_creation = util.find_nested_key(user_tweets,("user_results","result","legacy","created_at"))
+
+user_tweets_creation = util.find_nested_key(user_tweets,("tweet_results","result","legacy","created_at"))
 
 ```
 
