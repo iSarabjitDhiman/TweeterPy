@@ -2,6 +2,7 @@ import httpx
 import asyncio
 import bs4
 import json
+import sys
 import datetime
 from . import util
 from . import config
@@ -47,6 +48,8 @@ def make_request(url=None, method=None, params=None, request_payload=None, sessi
             connection_limits = httpx.Limits(max_connections=100, max_keepalive_connections=10, keepalive_expiry=5)
             headers,cookies = session.headers,session.cookies
             session = httpx.AsyncClient(limits=connection_limits,headers=headers,cookies=cookies,follow_redirects=True,timeout=timeout,proxies=proxies,verify=ssl_verify)
+            if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith('win'):
+                asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
             return asyncio.run(make_concurrent_requests(request_payload))
     else:
         request_payload = {"method":method,"url":url,"params":params} | kwargs
