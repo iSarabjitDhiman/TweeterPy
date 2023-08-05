@@ -50,6 +50,8 @@ def make_request(url=None, method=None, params=None, request_payload=None, sessi
             session = httpx.AsyncClient(limits=connection_limits,headers=headers,cookies=cookies,follow_redirects=True,timeout=timeout,proxies=proxies,verify=ssl_verify)
             if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith('win'):
                 asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+            if config.USING_EVENT_LOOP:
+                return make_concurrent_requests(request_payload)
             return asyncio.run(make_concurrent_requests(request_payload))
     else:
         request_payload = {"method":method,"url":url,"params":params} | kwargs

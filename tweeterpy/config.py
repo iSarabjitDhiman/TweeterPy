@@ -12,5 +12,8 @@ PROXY = None
 # Directory path/name to save and load logged in sessions/cookies. Default path is current directory. i.e. current_path/Twitter Saved Sessions
 SESSION_DIRECTORY = "Twitter Saved Sessions"
 
+# Fix : RuntimeError('asyncio.run() cannot be called from a running event loop') #15
+USING_EVENT_LOOP = False
+
 if __name__ == "__main__":
     pass
