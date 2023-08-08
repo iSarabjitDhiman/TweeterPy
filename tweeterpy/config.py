@@ -13,6 +13,7 @@ PROXY = None
 SESSION_DIRECTORY = "Twitter Saved Sessions"
 
 # Fix : RuntimeError('asyncio.run() cannot be called from a running event loop') #15
+# Specify if already running an event loop.
 USING_EVENT_LOOP = False
 
 if __name__ == "__main__":
