@@ -45,7 +45,7 @@ class FeatureSwitch:
         # fmt: off 
         try:
             features = self.api_endpoints.get(api_path)['metadata']['featureSwitches']
-            features = {feature : self.all_feature_switches.get(feature)['value'] for feature in features}
+            features = {feature : self.all_feature_switches.get(feature,{}).get('value',False) for feature in features}
             return features
         # fmt: on
         except:
