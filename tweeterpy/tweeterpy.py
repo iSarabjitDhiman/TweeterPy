@@ -28,9 +28,10 @@ class TweeterPy:
             features = FeatureSwitch().get_query_features(endpoint) or util.generate_features(**kwargs)
             query_params["features"] = json.dumps(features)
         # fmt: on   
-        return url, query_params
+        request_payload = {"url": url, "params": query_params}
+        return request_payload
 
-    def _handle_pagination(self, url, query_params, end_cursor=None, data_path=None, total=None):
+    def _handle_pagination(self, url, params, end_cursor=None, data_path=None, total=None):
         # fmt: off  - Turns off formatting for this block of code. Just for the readability purpose.
         def filter_data(response):
             filtered_data = []
@@ -46,10 +47,10 @@ class TweeterPy:
         while data_container["has_next_page"]:
             try:
                 if end_cursor:
-                    varaibles = json.loads(query_params['variables'])
+                    varaibles = json.loads(params['variables'])
                     varaibles['cursor'] = end_cursor
-                    query_params['variables'] = json.dumps(varaibles)
-                response = make_request(url, params=query_params)
+                    params['variables'] = json.dumps(varaibles)
+                response = make_request(url, params=params)
                 data = [item for item in reduce(
                     dict.get, data_path, response) if item['type'] == 'TimelineAddEntries'][0]['entries']
                 top_cursor = [
@@ -201,9 +202,9 @@ class TweeterPy:
         """
         if isinstance(username, int) or username.isnumeric():
             return username
-        url, query_params = self._generate_request_data(
+        request_payload = self._generate_request_data(
             Path.USER_ID_ENDPOINT, {"screen_name": username})
-        response = make_request(url, params=query_params)
+        response = make_request(**request_payload)
         return response['data']['user_result_by_screen_name']['result']['rest_id']
 
     @login_decorator
@@ -218,9 +219,9 @@ class TweeterPy:
         """
         user_id = self.get_user_id(user_id)
         variables = {"userId": user_id, "withSafetyModeUserFields": True}
-        url, query_params = self._generate_request_data(
+        request_payload = self._generate_request_data(
             Path.USER_INFO_ENDPOINT, variables, user_data_features=True)
-        response = make_request(url, params=query_params)
+        response = make_request(**request_payload)
         return response['data']['user']['result']
 
     @login_decorator
@@ -234,9 +235,9 @@ class TweeterPy:
             dict: User information.
         """
         variables = {"screen_name": username, "withSafetyModeUserFields": True}
-        url, query_params = self._generate_request_data(
+        request_payload = self._generate_request_data(
             Path.USER_DATA_ENDPOINT, variables, user_info_feautres=True)
-        response = make_request(url, params=query_params)
+        response = make_request(**request_payload)
         return response['data']['user']['result']
 
     @login_decorator
@@ -250,9 +251,9 @@ class TweeterPy:
             list: Multiple users data.
         """
         variables = {"userIds": user_ids}
-        url, query_params = self._generate_request_data(
+        request_payload = self._generate_request_data(
             Path.MULTIPLE_USERS_DATA_ENDPOINT, variables, default_features=True)
-        response = make_request(url, params=query_params)
+        response = make_request(**request_payload)
         return response['data']['users']
 
     @login_decorator
@@ -278,11 +279,11 @@ class TweeterPy:
             query_endpoint = Path.USER_TWEETS_AND_REPLIES_ENDPOINT
             del variables['withQuickPromoteEligibilityTweetFields']
 
-        url, query_params = self._generate_request_data(
+        request_payload = self._generate_request_data(
             query_endpoint, variables, additional_features=True)
         data_path = ('data', 'user', 'result', 'timeline_v2',
                      'timeline', 'instructions')
-        return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
+        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total)
 
     @login_decorator
     def get_user_media(self, user_id, end_cursor=None, total=None):
@@ -299,11 +300,11 @@ class TweeterPy:
         user_id = self.get_user_id(user_id)
         variables = {"userId": user_id, "count": 100, "includePromotedContent": False,
                      "withClientEventToken": False, "withBirdwatchNotes": False, "withVoice": True, "withV2Timeline": True}
-        url, query_params = self._generate_request_data(
+        request_payload = self._generate_request_data(
             Path.USER_MEDIA_ENDPOINT, variables, additional_features=True)
         data_path = ('data', 'user', 'result', 'timeline_v2',
                      'timeline', 'instructions')
-        return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
+        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total)
 
     @login_decorator
     def get_tweet(self, tweet_id, with_tweet_replies=False, end_cursor=None, total=None):
@@ -326,13 +327,13 @@ class TweeterPy:
         variables = {"focalTweetId": tweet_id, "referrer": referer, "with_rux_injections": False, "includePromotedContent": True,
                      "withCommunity": True, "withQuickPromoteEligibilityTweetFields": True, "withArticleRichContent": False, "withBirdwatchNotes": False,
                      "withVoice": True, "withV2Timeline": True}
-        url, query_params = self._generate_request_data(
+        request_payload = self._generate_request_data(
             Path.TWEET_DETAILS_ENDPOINT, variables, additional_features=True)
         data_path = (
             'data', 'threaded_conversation_with_injections_v2', 'instructions')
         if with_tweet_replies:
-            return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
-        return make_request(url, params=query_params)
+            return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total)
+        return make_request(**request_payload)
 
     @login_decorator
     def get_liked_tweets(self, user_id, end_cursor=None, total=None):
@@ -351,11 +352,11 @@ class TweeterPy:
             self.login()
         variables = {"userId": user_id, "count": 100, "includePromotedContent": False,
                      "withClientEventToken": False, "withBirdwatchNotes": False, "withVoice": True, "withV2Timeline": True}
-        url, query_params = self._generate_request_data(
+        request_payload = self._generate_request_data(
             Path.LIKED_TWEETS_ENDPOINT, variables, additional_features=True)
         data_path = ('data', 'user', 'result', 'timeline_v2',
                      'timeline', 'instructions')
-        return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
+        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total)
 
     @login_decorator
     def get_user_timeline(self, end_cursor=None, total=None):
@@ -372,10 +373,10 @@ class TweeterPy:
             self.login()
         variables = {"count": 40, "includePromotedContent": True,
                      "latestControlAvailable": True, "withCommunity": True}
-        url, query_params = self._generate_request_data(
+        request_payload = self._generate_request_data(
             Path.HOME_TIMELINE_ENDPOINT, variables, additional_features=True)
         data_path = ('data', 'home', 'home_timeline_urt', 'instructions')
-        return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
+        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total)
 
     @login_decorator
     def get_list_tweets(self, list_id, end_cursor=None, total=None):
@@ -390,11 +391,11 @@ class TweeterPy:
             dict: Returns data, cursor_endpoint, has_next_page
         """
         variables = {"listId": list_id, "count": 100}
-        url, query_params = self._generate_request_data(
+        request_payload = self._generate_request_data(
             Path.TWEETS_LIST_ENDPOINT, variables, additional_features=True)
         data_path = ('data', 'list', 'tweets_timeline',
                      'timeline', 'instructions')
-        return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
+        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total)
 
     @login_decorator
     def get_topic_tweets(self, topic_id, end_cursor=None, total=None):
@@ -409,11 +410,11 @@ class TweeterPy:
             dict: Returns data, cursor_endpoint, has_next_page
         """
         variables = {"rest_id": topic_id, "count": 100}
-        url, query_params = self._generate_request_data(
+        request_payload = self._generate_request_data(
             Path.TOPIC_TWEETS_ENDPOINT, variables, additional_features=True)
         data_path = ('data', 'topic_by_rest_id', 'topic_page',
                      'body', 'timeline', 'instructions')
-        return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
+        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total)
 
     @login_decorator
     def search(self, search_query, end_cursor=None, total=None, search_filter=None):
@@ -432,11 +433,11 @@ class TweeterPy:
         # Latest , Top , People , Photos , Videos (Product) - Filter
         variables = {"rawQuery": search_query, "count": 20,
                      "querySource": "hashtag_click", "product": search_filter}
-        url, query_params = self._generate_request_data(
+        request_payload = self._generate_request_data(
             Path.SEARCH_ENDPOINT, variables, additional_features=True)
         data_path = ('data', 'search_by_raw_query',
                      'search_timeline', 'timeline', 'instructions')
-        return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
+        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total)
 
     @login_decorator
     def get_friends(self, user_id, follower=False, following=False, mutual_follower=False, end_cursor=None, total=None):
@@ -462,11 +463,11 @@ class TweeterPy:
         query_path = Path.FOLLOWERS_ENDPOINT if follower else Path.FOLLOWINGS_ENDPOINT if following else Path.MUTUAL_FOLLOWERS_ENDPOINT if mutual_follower else None
         variables = {"userId": user_id, "count": 100,
                      "includePromotedContent": False}
-        url, query_params = self._generate_request_data(
+        request_payload = self._generate_request_data(
             query_path, variables, additional_features=True)
         data_path = ('data', 'user', 'result', 'timeline',
                      'timeline', 'instructions')
-        return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
+        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total)
 
     @login_decorator
     def get_profile_business_category(self, user_id):
@@ -480,9 +481,9 @@ class TweeterPy:
         """
         user_id = self.get_user_id(user_id)
         variables = {"rest_id": user_id}
-        url, query_params = self._generate_request_data(
+        request_payload = self._generate_request_data(
             Path.PROFILE_CATEGORY_ENDPOINT, variables)
-        response = make_request(url, params=query_params)
+        response = make_request(**request_payload)
         return response
 
     @login_decorator
@@ -501,10 +502,10 @@ class TweeterPy:
             self.login()
         variables = {"tweetId": str(tweet_id), "count": 100,
                      "includePromotedContent": True}
-        url, query_params = self._generate_request_data(
+        request_payload = self._generate_request_data(
             Path.TWEET_LIKES_ENDPOINT, variables, additional_features=True)
         data_path = ('data', 'favoriters_timeline', 'timeline', 'instructions')
-        return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
+        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total)
 
     @login_decorator
     def get_retweeters(self, tweet_id, end_cursor=None, total=None):
@@ -522,10 +523,10 @@ class TweeterPy:
             self.login()
         variables = {"tweetId": str(tweet_id), "count": 100,
                      "includePromotedContent": True}
-        url, query_params = self._generate_request_data(
+        request_payload = self._generate_request_data(
             Path.RETWEETED_BY_ENDPOINT, variables, additional_features=True)
         data_path = ('data', 'retweeters_timeline', 'timeline', 'instructions')
-        return self._handle_pagination(url, query_params, end_cursor=end_cursor, data_path=data_path, total=total)
+        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total)
 
 
 if __name__ == "__main__":
