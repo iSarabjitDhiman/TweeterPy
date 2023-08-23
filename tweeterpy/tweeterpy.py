@@ -102,8 +102,11 @@ class TweeterPy:
         query = {"variables": json.dumps({"withCommunitiesMemberships": True,
                                           "withSubscribedTab": True, "withCommunitiesCreation": True}),
                  "features": json.dumps(util.generate_features())}
-        response = self.session.get(url, params=query).json()
-        return response
+        response = self.session.get(url, params=query)
+        try:
+            return response.json()
+        except:
+            return "Guest Session"
 
     def login_decorator(original_function):
         def wrapper(self, *args, **kwargs):
@@ -190,7 +193,6 @@ class TweeterPy:
         TaskHandler().login(username, password)
         util.generate_headers(session=self.session)
 
-    @login_decorator
     def get_user_id(self, username):
         """Get user ID of a twitter user.
 
@@ -202,6 +204,8 @@ class TweeterPy:
         """
         if isinstance(username, int) or username.isnumeric():
             return username
+        if not self.logged_in():
+            return self.get_user_data(username).get('rest_id')
         request_payload = self._generate_request_data(
             Path.USER_ID_ENDPOINT, {"screen_name": username})
         response = make_request(**request_payload)
@@ -224,7 +228,6 @@ class TweeterPy:
         response = make_request(**request_payload)
         return response['data']['user']['result']
 
-    @login_decorator
     def get_user_data(self, username):
         """Extracts user details as same as get_user_info method. Except this one returns info about blue tick verification badge as well.
 
@@ -256,7 +259,6 @@ class TweeterPy:
         response = make_request(**request_payload)
         return response['data']['users']
 
-    @login_decorator
     def get_user_tweets(self, user_id, with_replies=False, end_cursor=None, total=None):
         """Get Tweets from a user's profile.
 
@@ -274,6 +276,8 @@ class TweeterPy:
         variables = {"userId": user_id, "count": 100, "includePromotedContent": True,
                      "withQuickPromoteEligibilityTweetFields": True, "withVoice": True, "withV2Timeline": True}
         if with_replies:
+            if not self.logged_in():
+                self.login()
             variables["count"] = 20
             variables['withCommunity'] = True
             query_endpoint = Path.USER_TWEETS_AND_REPLIES_ENDPOINT
@@ -306,7 +310,6 @@ class TweeterPy:
                      'timeline', 'instructions')
         return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total)
 
-    @login_decorator
     def get_tweet(self, tweet_id, with_tweet_replies=False, end_cursor=None, total=None):
         """Get Tweets from a user's profile.
 
@@ -327,11 +330,18 @@ class TweeterPy:
         variables = {"focalTweetId": tweet_id, "referrer": referer, "with_rux_injections": False, "includePromotedContent": True,
                      "withCommunity": True, "withQuickPromoteEligibilityTweetFields": True, "withArticleRichContent": False, "withBirdwatchNotes": False,
                      "withVoice": True, "withV2Timeline": True}
+        variables = variables if self.logged_in() else {
+            "tweetId": tweet_id, "withCommunity": False, "includePromotedContent": False, "withVoice": False}
         request_payload = self._generate_request_data(
             Path.TWEET_DETAILS_ENDPOINT, variables, additional_features=True)
-        data_path = (
-            'data', 'threaded_conversation_with_injections_v2', 'instructions')
+        if not self.logged_in():
+            request_payload['url'] = request_payload.get('url').replace(
+                Path.TWEET_DETAILS_ENDPOINT, Path.TWEET_DETAILS_BY_ID)
         if with_tweet_replies:
+            if not self.logged_in():
+                self.login()
+            data_path = (
+                'data', 'threaded_conversation_with_injections_v2', 'instructions')
             return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total)
         return make_request(**request_payload)
 
@@ -348,8 +358,6 @@ class TweeterPy:
             dict: Returns data, cursor_endpoint, has_next_page
         """
         user_id = self.get_user_id(user_id)
-        if not self.logged_in():
-            self.login()
         variables = {"userId": user_id, "count": 100, "includePromotedContent": False,
                      "withClientEventToken": False, "withBirdwatchNotes": False, "withVoice": True, "withV2Timeline": True}
         request_payload = self._generate_request_data(
@@ -369,8 +377,6 @@ class TweeterPy:
         Returns:
             dict: Returns data, cursor_endpoint, has_next_page
         """
-        if not self.logged_in():
-            self.login()
         variables = {"count": 40, "includePromotedContent": True,
                      "latestControlAvailable": True, "withCommunity": True}
         request_payload = self._generate_request_data(
@@ -390,7 +396,7 @@ class TweeterPy:
         Returns:
             dict: Returns data, cursor_endpoint, has_next_page
         """
-        variables = {"listId": list_id, "count": 100}
+        variables = {"listId": str(list_id), "count": 100}
         request_payload = self._generate_request_data(
             Path.TWEETS_LIST_ENDPOINT, variables, additional_features=True)
         data_path = ('data', 'list', 'tweets_timeline',
@@ -458,8 +464,6 @@ class TweeterPy:
             raise Exception(
                 "Set one of the (follower,following,mutual_follower) to True.")
         user_id = self.get_user_id(user_id)
-        if not self.logged_in():
-            self.login()
         query_path = Path.FOLLOWERS_ENDPOINT if follower else Path.FOLLOWINGS_ENDPOINT if following else Path.MUTUAL_FOLLOWERS_ENDPOINT if mutual_follower else None
         variables = {"userId": user_id, "count": 100,
                      "includePromotedContent": False}
@@ -498,8 +502,6 @@ class TweeterPy:
         Returns:
             dict: Returns data, cursor_endpoint, has_next_page
         """
-        if not self.logged_in():
-            self.login()
         variables = {"tweetId": str(tweet_id), "count": 100,
                      "includePromotedContent": True}
         request_payload = self._generate_request_data(
@@ -519,8 +521,6 @@ class TweeterPy:
         Returns:
             dict: Returns data, cursor_endpoint, has_next_page
         """
-        if not self.logged_in():
-            self.login()
         variables = {"tweetId": str(tweet_id), "count": 100,
                      "includePromotedContent": True}
         request_payload = self._generate_request_data(

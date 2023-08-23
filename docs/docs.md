@@ -1,6 +1,6 @@
 <h1 align="center">Documentation</h1>
 
-## Import & Initialize.
+## Import & Initialize
 
 ```python
 from tweeterpy import TweeterPy
@@ -9,7 +9,7 @@ from tweeterpy import config # if want to change configurations.Check out config
 twitter = TweeterPy()
 ```
 
-> ### Example - Get User ID of a User.
+> ### Example - Get User ID of a User
 
 ```python
 from tweeterpy import TweeterPy
@@ -39,7 +39,7 @@ print(twitter.get_user_id('elonmusk'))
 
 ```
 
-## Check If User is Logged In.
+## Check If User is Logged In
 
 ```python
 logged_in()
@@ -52,7 +52,7 @@ logged_in()
     """
 ```
 
-## Get Logged In User Details.
+## Get Logged In User Details
 
 ```python
 self.me
@@ -142,7 +142,7 @@ get_user_id(username)
     """
 ```
 
-## Get User Details i.e. username, fullname, bio etc.
+## Get User Details i.e. username, fullname, bio etc. -- LOGIN REQUIRED
 
 ```python
 get_user_info(user_id)
@@ -158,7 +158,7 @@ get_user_info(user_id)
     """
 ```
 
-## Get User Details i.e. username, fullname, bio etc. and Verification Badge Details.
+## Get User Details i.e. username, fullname, bio etc. and Verification Badge Details
 
 ```python
 get_user_data(username)
@@ -174,7 +174,7 @@ get_user_data(username)
     """
 ```
 
-## Get Mutiple Users' Details
+## Get Mutiple Users' Details -- LOGIN REQUIRED
 
 ```python
 get_multiple_users_data(user_ids)
@@ -210,7 +210,7 @@ get_user_tweets(user_id, with_replies=False, end_cursor=None, total=None)
     """
 ```
 
-## Get User Media Posts
+## Get User Media Posts -- LOGIN REQUIRED
 
 ```python
 get_user_media(user_id, end_cursor=None, total=None)
@@ -282,7 +282,7 @@ get_user_timeline(end_cursor=None, total=None)
     """
 ```
 
-## Get Tweets from a Tweet List (Tweet Lists are Available on Twitter Mobile App)
+## Get Tweets from a Tweet List (Tweet Lists are Available on Twitter Mobile App) -- LOGIN REQUIRED
 
 ```python
 get_list_tweets(list_id, end_cursor=None, total=None)
@@ -299,7 +299,7 @@ get_list_tweets(list_id, end_cursor=None, total=None)
     """
 ```
 
-## Get Tweets from a Topic Page.
+## Get Tweets from a Topic Page -- LOGIN REQUIRED
 
 ```python
 get_topic_tweets(topic_id, end_cursor=None, total=None)
@@ -316,7 +316,7 @@ get_topic_tweets(topic_id, end_cursor=None, total=None)
     """
 ```
 
-## Perform a Search
+## Perform a Search -- LOGIN REQUIRED
 
 ```python
 search(search_query, end_cursor=None, total=None, search_filter=None)
@@ -356,7 +356,7 @@ get_friends(user_id, follower=False, following=False, mutual_follower=False, end
     """
 ```
 
-## Check User's Profile Category.
+## Check User's Profile Category -- LOGIN REQUIRED
 
 ```python
 get_profile_business_category(user_id)
@@ -373,7 +373,7 @@ get_profile_business_category(user_id)
 
 ```
 
-## Get List of Users Who Liked The Specified Tweet. -- LOGIN REQUIRED
+## Get List of Users Who Liked The Specified Tweet -- LOGIN REQUIRED
 
 ```python
 get_tweet_likes(tweet_id, end_cursor=None, total=None)
@@ -391,7 +391,7 @@ get_tweet_likes(tweet_id, end_cursor=None, total=None)
     """
 ```
 
-## Get List of Users Who Re-Tweeted The Specified Tweet. -- LOGIN REQUIRED
+## Get List of Users Who Re-Tweeted The Specified Tweet -- LOGIN REQUIRED
 
 ```python
 get_retweeters(tweet_id, end_cursor=None, total=None)

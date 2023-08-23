@@ -25,6 +25,7 @@ class Path:
     TWEETS_LIST_ENDPOINT = "2Vjeyo_L0nizAUhHe3fKyA/ListLatestTweetsTimeline"
     TOPIC_TWEETS_ENDPOINT = "KDCkc4PZY-sCy_L-scQImw/TopicLandingPage"
     TWEET_DETAILS_ENDPOINT = "Pn68XRZwyV9ClrAEmK8rrQ/TweetDetail"
+    TWEET_DETAILS_BY_ID = "0hWvDhmW8YQ-S_ib3azIrw/TweetResultByRestId"
     VIEWER_ENDPOINT = "k3027HdkVqbuDPpdoniLKA/Viewer"
     SEARCH_ENDPOINT = "IOJ89SDQ9IrZ2t7hSD4Fdg/SearchTimeline"
     FOLLOWERS_ENDPOINT = "WWFQL1d4gxtqm2mjZCRa-Q/Followers"

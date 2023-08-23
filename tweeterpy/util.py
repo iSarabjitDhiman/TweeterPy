@@ -67,10 +67,11 @@ def generate_url(domain=None, url_path=None):
 
 def check_for_errors(response):
     if isinstance(response, dict) and "errors" in response.keys():
-        error_message = "\n".join([error['message']
-                                  for error in response['errors']])
-        raise Exception(error_message)
-    # return response['flow_token'] # For manual Way
+        if "data" not in response.keys():
+            error_message = "\n".join([error['message']
+                                       for error in response['errors']])
+            raise Exception(error_message)
+    # return response['flow_token'] # For manual Way - login_util
     return response
 
 
