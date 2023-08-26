@@ -101,7 +101,7 @@ class TweeterPy:
         url = util.generate_url(url_path=Path.VIEWER_ENDPOINT)
         query = {"variables": json.dumps({"withCommunitiesMemberships": True,
                                           "withSubscribedTab": True, "withCommunitiesCreation": True}),
-                 "features": json.dumps(util.generate_features())}
+                 "features": json.dumps(util.generate_features(user_data_features=True))}
         response = self.session.get(url, params=query)
         try:
             return response.json()
