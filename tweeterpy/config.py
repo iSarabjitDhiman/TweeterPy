@@ -15,5 +15,59 @@ PROXY = None
 # Directory path/name to save and load logged in sessions/cookies. Default path is current directory. i.e. current_path/Twitter Saved Sessions
 SESSION_DIRECTORY = "Twitter Saved Sessions"
 
+# File name to save logs.
+LOG_FILE_NAME = "tweeterpy.log"
+
+# Logging level : "DEBUG","INFO","WARNING","ERROR","CRITICAL"
+# If None, "INFO" will be used for Stream/Console logs and "DEBUG" will be used for file logs.
+# LOG_LEVEL = "INFO"
+LOG_LEVEL = None
+
+# Disable logs for imported modules/libraries only.
+DISABLE_EXTERNAL_LOGS = False
+
+# Disable logs completely. (It sets logging level to "ERROR".)
+DISABLE_LOGS = False
+
+# Log Configuration.
+LOGGING_CONFIG = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'standard': {
+            'format': '%(asctime)s [%(levelname)s] [Line No. %(lineno)d] %(name)s : %(funcName)s :: %(message)s'
+        },
+        'custom': {
+            # 'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+            'class': 'tweeterpy.logging_util.CustomFormatter',
+        }
+    },
+    'handlers': {
+        'stream': {
+            'level': LOG_LEVEL or 'INFO',
+            'formatter': 'custom',
+            'class': 'logging.StreamHandler',
+            'stream': 'ext://sys.stdout'
+        },
+        'file': {
+            'level': LOG_LEVEL or 'DEBUG',
+            'formatter': 'standard',
+            'class': 'logging.FileHandler',
+            'filename': LOG_FILE_NAME
+        }
+    },
+    'loggers': {
+        '': {  # root logger
+            'handlers': ['stream', 'file'],
+            'level': LOG_LEVEL or 'DEBUG'
+        },
+        '__main__': {  # if __name__ == '__main__'
+            'handlers': ['stream', 'file'],
+            'level': LOG_LEVEL or 'DEBUG',
+        }
+    }
+}
+
+
 if __name__ == "__main__":
     pass

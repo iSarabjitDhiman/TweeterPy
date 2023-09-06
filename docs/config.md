@@ -48,3 +48,24 @@ config.PROXY = None
 # Directory path/name to save and load logged in sessions/cookies. Default path is current directory. i.e. current_path/Twitter Saved Sessions
 config.SESSION_DIRECTORY = "Twitter Saved Sessions"
 ```
+
+## Logs
+
+```python
+# File name to save logs.
+LOG_FILE_NAME = "tweeterpy.log"
+
+# Logging level : "DEBUG","INFO","WARNING","ERROR","CRITICAL"
+# If None, "INFO" will be used for Stream/Console logs and "DEBUG" will be used for file logs.
+# LOG_LEVEL = "INFO"
+LOG_LEVEL = None
+
+# Disable logs for imported modules/libraries only.
+DISABLE_EXTERNAL_LOGS = False
+
+# Disable logs completely. (It sets logging level to "ERROR".)
+DISABLE_LOGS = False
+
+# Log Configuration. Set Custom Log configuration in dict format.
+LOGGING_CONFIG = {}
+```

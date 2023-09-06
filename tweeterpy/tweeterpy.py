@@ -2,6 +2,7 @@ import requests
 import json
 import random
 import getpass
+import logging.config
 from functools import reduce
 
 from .api_util import ApiUpdater
@@ -9,13 +10,22 @@ from .constants import Path, FeatureSwitch
 from .login_util import TaskHandler
 from .request_util import make_request
 from .session_util import load_session, save_session
+from .logging_util import set_log_level
 from . import util
 from . import config
+
+logging.config.dictConfig(config.LOGGING_CONFIG)
+logger = logging.getLogger(__name__)
 
 
 class TweeterPy:
 
     def __init__(self):
+        if config.DISABLE_LOGS or config.DISABLE_EXTERNAL_LOGS:
+            logger.debug("Disabling logs...")
+            config.LOG_LEVEL = "ERROR" if config.DISABLE_LOGS else config.LOG_LEVEL
+            disable_external_only = config.DISABLE_EXTERNAL_LOGS if not config.DISABLE_LOGS else False
+            set_log_level(logging.ERROR, external_only=disable_external_only)
         self.generate_session()
         # update api endpoints
         ApiUpdater()
@@ -29,6 +39,7 @@ class TweeterPy:
             query_params["features"] = json.dumps(features)
         # fmt: on   
         request_payload = {"url": url, "params": query_params}
+        logger.debug(f"Request Payload => {request_payload}")
         return request_payload
 
     def _handle_pagination(self, url, params, end_cursor=None, data_path=None, total=None):
@@ -75,11 +86,11 @@ class TweeterPy:
                     return data_container
             # fmt: on 
             except ConnectionError as error:
-                print(error)
+                logger.exception(error)
                 continue
 
             except Exception as error:
-                print(error)
+                logger.exception(error)
                 return data_container
 
     @property
@@ -106,11 +117,13 @@ class TweeterPy:
         try:
             return response.json()
         except:
-            return "Guest Session"
+            logger.info("Guest Session")
+            return
 
     def login_decorator(original_function):
         def wrapper(self, *args, **kwargs):
             if not self.logged_in():
+                logger.warn('User is not authenticated.')
                 self.login()
             return original_function(self, *args, **kwargs)
         return wrapper
@@ -176,6 +189,7 @@ class TweeterPy:
             bool: Returns True if the user is logged in.
         """
         if "auth_token" in self.session.cookies.keys():
+            logger.info('User is authenticated.')
             return True
         return False
 

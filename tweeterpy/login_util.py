@@ -1,6 +1,7 @@
 from .constants import Path
 from .request_util import make_request
 from . import util
+from .logging_util import disable_logger
 
 
 class TaskHandler:
@@ -44,6 +45,7 @@ class TaskHandler:
                                           'link': 'next_link'}}]}
         return make_request(Path.TASK_URL, method="POST", json=payload)
 
+    @disable_logger
     def _get_password_flow_token(self, flow_token, subtask_id="LoginEnterUserIdentifierSSO", username=None):
         payload = {'flow_token': flow_token,
                    'subtask_inputs': [{'subtask_id': subtask_id,
@@ -52,6 +54,7 @@ class TaskHandler:
                                           'link': 'next_link'}}]}
         return util.check_for_errors(make_request(Path.TASK_URL, method="POST", json=payload))
 
+    @disable_logger
     def _get_account_duplication_flow_token(self, flow_token, subtask_id="LoginEnterPassword", password=None):
         payload = {'flow_token': flow_token,
                    'subtask_inputs': [{'subtask_id': subtask_id,
@@ -73,6 +76,7 @@ class TaskHandler:
                    "subtask_inputs": [{"subtask_id": subtask_id, "enter_text": {"text": otp,"link":"next_link"}}]}
         return make_request(Path.TASK_URL, method="POST", json=payload)
 
+    @disable_logger
     def login(self, username, password):
         # MANUAL WAY OF HANDLING LOG IN
         """
@@ -89,31 +93,34 @@ class TaskHandler:
         # DYNAMIC WAY OF HANDLING LOG IN - BETTER
         tasks_pending = True
         otp = None
-        task_flow_mapper = self._create_task_mapper(username,password,otp)
-        response = self._get_flow_token()
-        self._get_javscript_instrumentation_subtask()
-        while tasks_pending:
-            tasks = [task['subtask_id'] for task in response['subtasks']]
-            flow_token = response['flow_token']
-            task_id = [task_id for task_id in task_flow_mapper.keys() if task_id in tasks][0]
-            task = task_flow_mapper.get(task_id)
-            if task:
-                if task_id == 'LoginAcid':
-                    otp_required = any([subtask.get("enter_text",{}).get("hint_text","").lower() == "confirmation code" for subtask in response.get("subtasks")])
-                    email_verification = any([subtask.get("enter_text",{}).get("keyboard_type","").lower() == "email" for subtask in response.get("subtasks")])
-                    error_message = "Check your email. Enter the confirmation code : " if otp_required else "Confirm your email, Enter your email :" if email_verification else None
-                    if error_message:
-                        otp = str(input(error_message))
-                        task_flow_mapper["LoginAcid"].update({"task_parameter":otp}) 
-                if task_id == 'LoginSuccessSubtask':
-                    tasks_pending = False
-                    print(task['task_output'])
-                    continue
-                if task['task_parameter'] is None:
-                    response = task.get('task_executor')(flow_token,task_id)
+        try:
+            task_flow_mapper = self._create_task_mapper(username,password,otp)
+            response = self._get_flow_token()
+            self._get_javscript_instrumentation_subtask()
+            while tasks_pending:
+                tasks = [task['subtask_id'] for task in response['subtasks']]
+                flow_token = response['flow_token']
+                task_id = [task_id for task_id in task_flow_mapper.keys() if task_id in tasks][0]
+                task = task_flow_mapper.get(task_id)
+                if task:
+                    if task_id == 'LoginAcid':
+                        otp_required = any([subtask.get("enter_text",{}).get("hint_text","").lower() == "confirmation code" for subtask in response.get("subtasks")])
+                        email_verification = any([subtask.get("enter_text",{}).get("keyboard_type","").lower() == "email" for subtask in response.get("subtasks")])
+                        error_message = "Check your email. Enter the confirmation code : " if otp_required else "Confirm your email, Enter your email :" if email_verification else None
+                        if error_message:
+                            otp = str(input(error_message))
+                            task_flow_mapper["LoginAcid"].update({"task_parameter":otp}) 
+                    if task_id == 'LoginSuccessSubtask':
+                        tasks_pending = False
+                        print(task['task_output'])
+                        continue
+                    if task['task_parameter'] is None:
+                        response = task.get('task_executor')(flow_token,task_id)
+                    else:
+                        parameter = task.get('task_parameter')
+                        response =  task.get('task_executor')(flow_token,task_id,parameter)
                 else:
-                    parameter = task.get('task_parameter')
-                    response =  task.get('task_executor')(flow_token,task_id,parameter)
-            else:
-                print(f"\n{response}")
-                tasks_pending = False
+                    print(f"\n{response}")
+                    tasks_pending = False
+        except Exception as error:
+            raise error

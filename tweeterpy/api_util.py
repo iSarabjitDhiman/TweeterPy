@@ -1,13 +1,19 @@
 import re
 import json
 import js2py
+import logging.config
 from .constants import Path, FeatureSwitch
 from .request_util import make_request
+from . import config
 
+logging.config.dictConfig(config.LOGGING_CONFIG)
+logger = logging.getLogger(__name__)
 
 dataset_regex = re.compile(r'''exports\s*=\s*{(.*?)},''', re.VERBOSE)
 api_file_regex = re.compile(r'''api:(.*?),''', re.VERBOSE)
 feature_switch_regex = re.compile(r'''.featureSwitch.:(.*?)}},''', re.VERBOSE)
+# logging.basicConfig(level=logging.DEBUG,
+#                     format='%(asctime)s [%(levelname)s] %(module)s : %(funcName)s : %(lineno)d ::: %(message)s')
 
 
 class ApiUpdater:
@@ -17,6 +23,7 @@ class ApiUpdater:
 
     def __init__(self):
         try:
+            logger.debug('Updating API...')
             # fmt: off - Turns off formatting for this block of code.
             page_source = self._get_home_page_source()
             api_file_url = self._get_api_file_url(page_source)
@@ -26,9 +33,10 @@ class ApiUpdater:
             new_api_endpoints = self._map_data(current_api_endpoints, api_endpoints_data)
             self._update_api_endpoints(new_api_endpoints)
             self._update_feature_switches(feature_switches)
-            print("API Updated Successfully.")
+            logger.info("API Updated Successfully.")
         except Exception as error:
-            raise Exception(f"{error}\nCouldn't Update API.")
+            logger.exception(f"API Couldn't be Updated.\n{error}")
+            raise
 
     def _get_home_page_source(self):
         return str(make_request(Path.BASE_URL))
@@ -36,8 +44,13 @@ class ApiUpdater:
     def _get_api_file_url(self,page_source=None):
         if page_source is None:
             page_source = self._get_home_page_source
-        api_file_name = re.search(api_file_regex, page_source).group(1)
-        api_file_url = f"{Path.TWITTER_CDN}/api.{eval(api_file_name)}a.js"
+        try:
+            api_file_name = re.search(api_file_regex, page_source).group(1)
+            api_file_url = f"{Path.TWITTER_CDN}/api.{eval(api_file_name)}a.js"
+            logger.debug(f"API Url => {api_file_url}")
+        except Exception as error:
+            logger.exception(f"Couldn't get the API Url.\n{error}")
+            raise
         return api_file_url
 
     def _get_api_file_content(self, file_url=None):

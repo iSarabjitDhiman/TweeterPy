@@ -1,7 +1,11 @@
 import pickle
 import requests
 import os
+import logging.config
 from . import config
+
+logging.config.dictConfig(config.LOGGING_CONFIG)
+logger = logging.getLogger(__name__)
 
 
 def _create_session_directory(directory_path=None):
@@ -17,10 +21,9 @@ def _show_saved_sessions(directory_path=None):
     if directory_path is None:
         directory_path = _create_session_directory()
     all_files = os.listdir(directory_path)
-    session_files = [f"{count}. {file}" for count, file in enumerate(
+    session_files = [f"{count}. {os.path.splitext(file)[0]}" for count, file in enumerate(
         all_files, start=1) if file.endswith(".pkl")]
-    for file in session_files:
-        print(os.path.splitext(file)[0])
+    print("\n".join(session_files))
     file_number = int(
         input("\nChoose a Number to Load an Exising Session : ").strip())
     while file_number >= len(all_files)+1 or file_number == 0:
@@ -32,6 +35,8 @@ def _show_saved_sessions(directory_path=None):
 
 def save_session(filename=None, path=None, session=None):
     if session is None or not isinstance(session, requests.Session):
+        logger.warn(
+            "No Session object given. Trying to save existing/default Session...")
         if config._DEFAULT_SESSION:
             session = config._DEFAULT_SESSION
         else:

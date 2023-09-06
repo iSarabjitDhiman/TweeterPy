@@ -1,9 +1,13 @@
 import datetime
 import time
+import logging.config
 from urllib.parse import urljoin
 from .constants import Path
 from .constants import PUBLIC_TOKEN
 from . import config
+
+logging.config.dictConfig(config.LOGGING_CONFIG)
+logger = logging.getLogger(__name__)
 
 
 class DotDict(dict):
@@ -71,6 +75,9 @@ def check_for_errors(response):
             error_message = "\n".join([error['message']
                                        for error in response['errors']])
             raise Exception(error_message)
+    if "data" in response.keys():
+        if not response.get("data"):
+            raise Exception("Couldn't fetch data.")
     # return response['flow_token'] # For manual Way - login_util
     return response
 
@@ -93,6 +100,7 @@ def check_api_rate_limits(response):
     api_limit_stats = {"total_limit": api_requests_limit, "remaining_requests_count": remaining_api_requests,
                        "resets_after": remaining_time, "reset_after_datetime_object": remaining_time_datetime_object,
                        "rate_limit_exhausted": limit_exhausted}
+    logger.debug(api_limit_stats)
     return api_limit_stats
 
 

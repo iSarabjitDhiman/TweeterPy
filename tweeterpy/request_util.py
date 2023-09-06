@@ -1,7 +1,11 @@
 import requests
 import bs4
+import logging.config
 from . import util
 from . import config
+
+logging.config.dictConfig(config.LOGGING_CONFIG)
+logger = logging.getLogger(__name__)
 
 
 def make_request(url, session=None, method=None, max_retries=None, timeout=None, **kwargs):
@@ -13,6 +17,7 @@ def make_request(url, session=None, method=None, max_retries=None, timeout=None,
         session = config._DEFAULT_SESSION or requests.Session()
     if timeout is None:
         timeout = config.TIMEOUT or 30
+    logger.debug(f"{locals()}")
     for retry_count, _ in enumerate(range(max_retries), start=1):
         try:
             response_text = ""
@@ -26,15 +31,14 @@ def make_request(url, session=None, method=None, max_retries=None, timeout=None,
             response.raise_for_status()
             return soup
         except KeyboardInterrupt:
-            print("Keyboard Interruption...")
+            logger.warn("Keyboard Interruption...")
             return
         except Exception as error:
-            print(f"Retry No. ==> {retry_count}", end="\r")
+            logger.debug(f"Retry No. ==> {retry_count}")
             if retry_count >= max_retries:
-                print(f"{error}\n\n{response_text}\n")
+                logger.exception(f"{error}\n{response_text}\n")
                 if api_limit_stats.get('rate_limit_exhausted'):
-                    print(
-                        f"\033[91m Rate Limit Exceeded:\033[0m {api_limit_stats}")
+                    logger.error(f"Rate Limit Exceeded => {api_limit_stats}")
                 raise error
 
 
