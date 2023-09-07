@@ -1,6 +1,6 @@
 import re
 import json
-import js2py
+import demjson
 import logging.config
 from .constants import Path, FeatureSwitch
 from .request_util import make_request
@@ -65,9 +65,9 @@ class ApiUpdater:
             page_source = str(page_source)
         matches = []
         for match in dataset_regex.finditer(page_source):
-            matches.append(match.group(0))
+            matches.append(match.group(1))
 
-        dict_data = [js2py.eval_js(each_match.replace('},', ''))
+        dict_data = [demjson.decode("{" + each_match)
                     for each_match in matches]
         return dict_data
 
