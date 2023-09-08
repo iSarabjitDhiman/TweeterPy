@@ -4,6 +4,9 @@ logger = logging.getLogger(__name__)
 
 PUBLIC_TOKEN = 'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA'
 
+# Filename to store api data/endpoints as a backup.
+API_TMP_FILE = "tweeterpy_api.json"
+
 
 class Color:
     BLACK = "\033[0;30m"
