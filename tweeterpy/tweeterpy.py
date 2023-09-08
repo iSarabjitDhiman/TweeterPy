@@ -137,19 +137,23 @@ class TweeterPy:
         Returns:
             requests.Session: requests.Session Object.
         """
-        self.session = requests.Session()
-        if config.PROXY is not None:
-            self.session.proxies = config.PROXY
-            self.session.verify = False
-        self.session.headers.update(util.generate_headers())
-        make_request(Path.BASE_URL, session=self.session)
-        guest_token = make_request(
-            Path.GUEST_TOKEN_URL, method="POST", session=self.session)['guest_token']
-        self.session.headers.update({'X-Guest-Token': guest_token})
-        self.session.cookies.update({'gt': guest_token})
-        if auth_token:
-            self.session.cookies.update({'auth_token': auth_token})
-            util.generate_headers(self.session)
+        try:
+            self.session = requests.Session()
+            if config.PROXY is not None:
+                self.session.proxies = config.PROXY
+                self.session.verify = False
+            self.session.headers.update(util.generate_headers())
+            make_request(Path.BASE_URL, session=self.session)
+            guest_token = make_request(
+                Path.GUEST_TOKEN_URL, method="POST", session=self.session)['guest_token']
+            self.session.headers.update({'X-Guest-Token': guest_token})
+            self.session.cookies.update({'gt': guest_token})
+            if auth_token:
+                self.session.cookies.update({'auth_token': auth_token})
+                util.generate_headers(self.session)
+        except Exception as error:
+            logger.exception(f"Couldn't generate a new session.\n{error}\n")
+            raise
         return self.session
 
     def save_session(self, session=None, session_name=None):

@@ -19,10 +19,10 @@ def make_request(url, session=None, method=None, max_retries=None, timeout=None,
         timeout = config.TIMEOUT or 30
     logger.debug(f"{locals()}")
     for retry_count, _ in enumerate(range(max_retries), start=1):
+        response_text, api_limit_stats = "", {}
         try:
-            response_text = ""
             response = session.request(method, url, timeout=timeout, **kwargs)
-            api_limit_stats = util.check_api_rate_limits(response)
+            api_limit_stats = util.check_api_rate_limits(response) or {}
             soup = bs4.BeautifulSoup(response.content, "lxml")
             if "json" in response.headers["Content-Type"]:
                 return util.check_for_errors(response.json())
