@@ -54,7 +54,7 @@ class TweeterPy:
                     return filtered_data
             return filtered_data
 
-        data_container = {"data": [],"cursor_endpoint": None, "has_next_page": True}
+        data_container = {"data": [],"cursor_endpoint": None, "has_next_page": True, "api_rate_limit":config._RATE_LIMIT_STATS}
         while data_container["has_next_page"]:
             try:
                 if end_cursor:
@@ -73,6 +73,8 @@ class TweeterPy:
                 if end_cursor:
                     end_cursor = reduce(dict.get, ('content','value'),end_cursor[0]) or reduce(dict.get, ('content','itemContent','value'),end_cursor[0])
                 data_container['data'].extend(filter_data(data))
+                if config._RATE_LIMIT_STATS:
+                    data_container['api_rate_limit'].update(config._RATE_LIMIT_STATS)
 
                 print(len(data_container['data']), end="\r")
 

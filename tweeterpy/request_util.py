@@ -23,6 +23,8 @@ def make_request(url, session=None, method=None, max_retries=None, timeout=None,
         try:
             response = session.request(method, url, timeout=timeout, **kwargs)
             api_limit_stats = util.check_api_rate_limits(response) or {}
+            if api_limit_stats:
+                config._RATE_LIMIT_STATS = api_limit_stats
             soup = bs4.BeautifulSoup(response.content, "lxml")
             if "json" in response.headers["Content-Type"]:
                 return util.check_for_errors(response.json())

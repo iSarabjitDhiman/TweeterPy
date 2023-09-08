@@ -17,6 +17,13 @@ class DotDict(dict):
     __delattr__ = dict.__delitem__
 
 
+class RateLimitError(Exception):
+    def __init__(self, message=None):
+        if message is None:
+            message = "API rate limit exhausted."
+        super().__init__(message)
+
+
 def generate_headers(session=None):
     headers = {"Authority": Path.DOMAIN,
                "Accept-Encoding": "gzip, deflate, br",
