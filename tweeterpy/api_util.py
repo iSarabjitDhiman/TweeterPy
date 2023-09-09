@@ -1,6 +1,6 @@
 import re
 import json
-import demjson
+import demjson3
 import os
 import tempfile
 import logging.config
@@ -76,7 +76,7 @@ class ApiUpdater:
         for match in dataset_regex.finditer(page_source):
             matches.append(match.group(1))
 
-        dict_data = [demjson.decode("{" + each_match)
+        dict_data = [demjson3.decode("{" + each_match)
                      for each_match in matches]
         return dict_data
 
