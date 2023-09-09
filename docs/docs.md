@@ -39,6 +39,32 @@ print(twitter.get_user_id('elonmusk'))
 
 ```
 
+> ### Example - Get Data out of Nested Python Dict
+
+```python
+from tweeterpy import TweeterPy
+from tweeterpy.util import find_nested_key
+
+twitter = TweeterPy()
+
+# get tweets or other data
+tweets = twitter.get_user_tweets("elonmusk",total=50)
+
+# get data by keys from the nested python dict, just pass in the dataset and the key name you want to extract.
+
+# NOTE : THERE MIGHT BE MULTIPLE KEYS WITH THE SAME NAME. SAY ID (IT COULD BE ID OF TWEET OR A USER OR A THREAD CONVERSATION ETC. ) TRY TO PASS A UNIQUE KEY, OR JUST PASS A DATASET WITH UNIQUE KEYS.
+
+# Get all the username from the tweets.
+usernames = find_nested_key(tweets,"screen_name")
+
+# Get text content from the tweets.
+tweets_text = find_nested_key(tweets,"full_text")
+
+# Get tweets creation time.
+tweets_creation_time = [find_nested_key(tweet['content']['itemContent']['tweet_results']['result']['legacy'],"created_at") for tweet in tweets['data']]
+
+```
+
 ## Check If User is Logged In
 
 ```python

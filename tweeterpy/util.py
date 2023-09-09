@@ -114,5 +114,20 @@ def check_api_rate_limits(response):
         return None
 
 
+def find_nested_key(dataset=None, nested_key=None):
+    def get_nested_data(dataset, nested_key, placeholder):
+        if isinstance(dataset, list) or isinstance(dataset, dict) and dataset:
+            if isinstance(dataset, list):
+                for item in dataset:
+                    get_nested_data(item, nested_key, placeholder)
+            if isinstance(dataset, dict):
+                if nested_key in dataset.keys():
+                    placeholder.append(dataset.get(nested_key))
+                for item in dataset.values():
+                    get_nested_data(item, nested_key, placeholder)
+        return placeholder
+    return get_nested_data(dataset, nested_key, [])
+
+
 if __name__ == "__main__":
     pass
