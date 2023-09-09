@@ -8,7 +8,7 @@ logging.config.dictConfig(config.LOGGING_CONFIG)
 logger = logging.getLogger(__name__)
 
 
-def make_request(url, session=None, method=None, max_retries=None, timeout=None, **kwargs):
+def make_request(url, session=None, method=None, max_retries=None, timeout=None, skip_error_checking=False, **kwargs):
     if method is None:
         method = "GET"
     if max_retries is None:
@@ -27,6 +27,8 @@ def make_request(url, session=None, method=None, max_retries=None, timeout=None,
                 config._RATE_LIMIT_STATS = api_limit_stats
             soup = bs4.BeautifulSoup(response.content, "lxml")
             if "json" in response.headers["Content-Type"]:
+                if skip_error_checking:
+                    return response.json()
                 return util.check_for_errors(response.json())
             response_text = "\n".join(
                 [line.strip() for line in soup.text.split("\n") if line.strip()])

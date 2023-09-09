@@ -46,7 +46,7 @@ def disable_logger(original_function):
         finally:
             if not config.DISABLE_LOGS:
                 [logging.getLogger(current_logger).setLevel(all_loggers.get(
-                    current_logger)) for current_logger in logging.root.manager.loggerDict.keys()]
+                    current_logger)) for current_logger in logging.root.manager.loggerDict.keys() if current_logger in list(all_loggers.keys())]
         return returned_output
     return wrapper
 
