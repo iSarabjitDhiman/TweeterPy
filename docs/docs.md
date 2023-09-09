@@ -52,7 +52,8 @@ tweets = twitter.get_user_tweets("elonmusk",total=50)
 
 # get data by keys from the nested python dict, just pass in the dataset and the key name you want to extract.
 
-# NOTE : THERE MIGHT BE MULTIPLE KEYS WITH THE SAME NAME. SAY ID (IT COULD BE ID OF TWEET OR A USER OR A THREAD CONVERSATION ETC. ) TRY TO PASS A UNIQUE KEY, OR JUST PASS A DATASET WITH UNIQUE KEYS.
+# NOTE : THERE MIGHT BE MULTIPLE KEYS WITH THE SAME NAME. SAY ID (IT COULD BE ID OF TWEET OR A USER OR A THREAD CONVERSATION ETC.) TRY TO PASS A UNIQUE KEY, OR JUST PASS A DATASET WITH UNIQUE KEYS.
+# YOU CAN ALSO PASS NESTED KEYS IN A TUPLE IF THERE ARE MULTIPLE SIMILIAR KEYS IN THE DATASET. (CHECK BELOW)
 
 # Get all the username from the tweets.
 usernames = find_nested_key(tweets,"screen_name")
@@ -63,6 +64,7 @@ tweets_text = find_nested_key(tweets,"full_text")
 # Get tweets creation time.
 tweets_creation_time = [find_nested_key(tweet['content']['itemContent']['tweet_results']['result']['legacy'],"created_at") for tweet in tweets['data']]
 
+
 # NESTED KEYS AS A TUPLE
 
 # you can also give it direct keys' location as a tuple in a hierarchy order if you know exact locaction or if the dataset has multiple similar keys.
@@ -70,19 +72,19 @@ tweets_creation_time = [find_nested_key(tweet['content']['itemContent']['tweet_r
 user_tweets = twitter.get_user_tweets("elonmusk",total=50)
 # Now say if you want to get tweet creation time which is stored in created_at key.
 
-# you will usually do util.find_nested_key(user_tweets,"created_at") if you take a look at the dataset, there are multiple created_at keys. One is for tweet datetime and other is for user account creation time.
+# you will usually do find_nested_key(user_tweets,"created_at") if you take a look at the dataset, there are multiple created_at keys. One is for tweet datetime and other is for user account creation time.
 
 """
 This is the location to tweet creation time.
-user_tweets[0]['data'][0]['content']['itemContent']['tweet_results']['result']['legacy']['created_at']
+user_tweets['data'][0]['content']['itemContent']['tweet_results']['result']['legacy']['created_at']
 This is the location to user account creation time.
-user_tweets[0]['data'][0]['content']['itemContent']['tweet_results']['result']['core']['user_results']['result']['legacy']['created_at']
+user_tweets['data'][0]['content']['itemContent']['tweet_results']['result']['core']['user_results']['result']['legacy']['created_at']
 """
 # So we have to be a bit more specific with our nested_keys. We can pass it as a tuple.
 
-user_account_creation = util.find_nested_key(user_tweets,("user_results","result","legacy","created_at"))
+user_account_creation = find_nested_key(user_tweets,("user_results","result","legacy","created_at"))
 
-user_tweets_creation = util.find_nested_key(user_tweets,("tweet_results","result","legacy","created_at"))
+user_tweets_creation = find_nested_key(user_tweets,("tweet_results","result","legacy","created_at"))
 
 ```
 
