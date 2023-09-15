@@ -131,8 +131,16 @@ def find_nested_key(dataset=None, nested_key=None):
                     placeholder.append(dataset.get(nested_key))
                 for item in dataset.values():
                     get_nested_data(item, nested_key, placeholder)
+        if len(placeholder) == 1:
+            return placeholder[0]
         return placeholder
-    return get_nested_data(dataset, nested_key, [])
+
+    if isinstance(nested_key, list):
+        if isinstance(dataset, list):
+            return [{key: get_nested_data(data, key, []) for key in nested_key} for data in dataset]
+        return {key: get_nested_data(dataset, key, []) for key in nested_key}
+
+    return [get_nested_data(data, nested_key, []) for data in dataset] if isinstance(dataset, list) else get_nested_data(dataset, nested_key, [])
 
 
 if __name__ == "__main__":

@@ -39,7 +39,7 @@ print(twitter.get_user_id('elonmusk'))
 
 ```
 
-> ### Example - Get Data out of Nested Python Dict
+> ### Example - Get Data out of Nested Python Dict/List
 
 ```python
 from tweeterpy import TweeterPy
@@ -48,7 +48,7 @@ from tweeterpy.util import find_nested_key
 twitter = TweeterPy()
 
 # get tweets or other data
-tweets = twitter.get_user_tweets("elonmusk",total=50)
+user_tweets = twitter.get_user_tweets("elonmusk",total=50)
 
 # get data by keys from the nested python dict, just pass in the dataset and the key name you want to extract.
 
@@ -56,16 +56,16 @@ tweets = twitter.get_user_tweets("elonmusk",total=50)
 # YOU CAN ALSO PASS NESTED KEYS IN A TUPLE IF THERE ARE MULTIPLE SIMILIAR KEYS IN THE DATASET. (CHECK BELOW)
 
 # Get all the username from the tweets.
-usernames = find_nested_key(tweets,"screen_name")
+usernames = find_nested_key(user_tweets,"screen_name")
 
 # Get text content from the tweets.
-tweets_text = find_nested_key(tweets,"full_text")
+tweets_text = find_nested_key(user_tweets,"full_text")
 
 # Get tweets creation time.
-tweets_creation_time = [find_nested_key(tweet['content']['itemContent']['tweet_results']['result']['legacy'],"created_at") for tweet in tweets['data']]
+tweets_creation_time = [find_nested_key(tweet['content']['itemContent']['tweet_results']['result']['legacy'],"created_at") for tweet in user_tweets['data']]
 
 
-# NESTED KEYS AS A TUPLE
+#-----------------------  NESTED KEYS AS A TUPLE -------------------------
 
 # you can also give it direct keys' location as a tuple in a hierarchy order if you know exact locaction or if the dataset has multiple similar keys.
 
@@ -85,6 +85,29 @@ user_tweets['data'][0]['content']['itemContent']['tweet_results']['result']['cor
 user_account_creation = find_nested_key(user_tweets,("user_results","result","legacy","created_at"))
 
 user_tweets_creation = find_nested_key(user_tweets,("tweet_results","result","legacy","created_at"))
+
+#------------------------- NESTED KEYS AS A LIST -------------------------
+
+# you can also give it a list of keys, to find multiple datapoints in a dataset.
+
+user = twitter.get_user_data("elonmusk")
+
+datapoints = ['name','screen_name','followers_count','friends_count','statuses_count','media_count','can_dm']
+
+# Get multiple datapoints by passing a list of keys
+# user_details = find_nested_key(user,['screen_name','name'])
+user_details = find_nested_key(user,datapoints)
+
+#------------- TUPLES INSIDE LIST OF KEYS TO BE MORE SPECIFIC -------------
+# There might be a situation when u get multiple results from a single key.
+# In our case it is for the "name" key in the datapoints list. One is for user full name (its inside legacy > name), the other is for the category name (its inside professional > category > name).
+# But you only wanted to get user's full name (which is inside legacy > name) but also the other values inside the datapoints list.
+# In such a case, you can use tuples inside a list as well.
+
+#  See I specified a tuple for the "name" to be more specific
+datapoints = [('legacy','name'),'screen_name','followers_count','friends_count','statuses_count','media_count','can_dm']
+
+user_details = find_nested_key(user,datapoints)
 
 ```
 

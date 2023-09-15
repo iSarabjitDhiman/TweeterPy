@@ -117,9 +117,9 @@ class TaskHandler:
                 task = task_flow_mapper.get(task_id)
                 if task:
                     if task_id == 'LoginAcid' or task_id == 'LoginEnterAlternateIdentifierSubtask':
-                        error_message = "\n".join(find_nested_key(response.get("subtasks"),"text"))
-                        input_type = " ".join(find_nested_key(response.get("subtasks"),"keyboard_type")).strip()
-                        input_message = " ".join(find_nested_key(response.get("subtasks"),"hint_text")) + f" (Input Type - {input_type}) ==> "
+                        error_message = "\n".join(find_nested_key(response,"text"))
+                        input_type = find_nested_key(response,"keyboard_type").strip()
+                        input_message = find_nested_key(response,"hint_text") + f" (Input Type - {input_type}) ==> "
                         if error_message and input_type:
                             print(f"\n{error_message}\n")
                             verification_input_data = str(input(input_message))
