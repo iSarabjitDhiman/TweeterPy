@@ -5,7 +5,9 @@
 <a href="https://www.python.org/"><img src="https://img.shields.io/pypi/pyversions/tweeterpy"></a>
 <a href="https://pypi.org/project/tweeterpy/"> <img src="https://img.shields.io/pypi/v/tweeterpy"></a>
 <a href="https://github.com/iSarabjitDhiman/TweeterPy/commits"> <img src="https://img.shields.io/github/last-commit/iSarabjitDhiman/TweeterPy"></a>
+<a href="https://discord.gg/pHY6CU5Ke4"> <img alt="Discord" src="https://img.shields.io/discord/1149281691479851018?style=flat&logo=discord&logoColor=white"></a>
 <a href="https://twitter.com/isarabjitdhiman"> <img src="https://img.shields.io/twitter/follow/iSarabjitDhiman?style=social"></a>
+
 
 ## Overview
 
