@@ -123,8 +123,8 @@ def find_nested_key(dataset=None, nested_key=None):
                     get_nested_data(item, nested_key, placeholder)
             if isinstance(dataset, dict):
                 if isinstance(nested_key, tuple) and nested_key[0] in dataset.keys():
-                    placeholder.append(reduce(lambda data, key: data.get(
-                        key, {}), nested_key, dataset) or None)
+                    placeholder.append(reduce(lambda data, key: data.get(key, {}) if isinstance(data, dict) else {},
+                                              nested_key, dataset) or None)
                     placeholder.remove(None) if None in placeholder else ''
                     # placeholder.append(reduce(dict.get,nested_key,dataset))
                 if isinstance(nested_key, str) and nested_key in dataset.keys():
