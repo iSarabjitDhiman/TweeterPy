@@ -39,7 +39,35 @@ print(twitter.get_user_id('elonmusk'))
 
 ```
 
-> ### Example - Get Data out of Nested Python Dict/List
+> ### Example - Get Data out of Nested Python Dict/List With User/Tweet Dataclasses (Easy Way)
+
+```python
+from tweeterpy import TweeterPy
+from tweeterpy.util import User, Tweet
+
+twitter = TweeterPy()
+
+# get tweets
+user_tweets = twitter.get_user_tweets("elonmusk",total=50)
+
+# clean the data
+Tweet_1 = Tweet(user_tweets['data'][0])
+Tweet_2 = Tweet(user_tweets['data'][1])
+
+# WANT THE DATA IN A PYTHON DICT? HERE IS HOW TO DO IT, JUST USE .dict() METHOD
+Tweet_1.dict()
+
+# get user data
+user_data = twitter.get_user_data("elonmusk")
+
+# clean the data
+elon_musk = User(user_data)
+elon_musk.dict() # if you want to have the data in a python dict.
+
+# IF YOU WANT TO HAVE MORE CONTROL OVER THE DATA OR MAYBE WANT TO FETCH SOME CUSTOM FIELDS, FEEL FREE TO CHECK find_nested_key function MENTIONED BELOW.
+```
+
+> ### Example - Get Data out of Nested Python Dict/List (Manual Way)
 
 ```python
 from tweeterpy import TweeterPy
