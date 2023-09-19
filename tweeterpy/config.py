@@ -54,7 +54,8 @@ LOGGING_CONFIG = {
             'level': LOG_LEVEL or 'DEBUG',
             'formatter': 'standard',
             'class': 'logging.FileHandler',
-            'filename': LOG_FILE_NAME
+            'filename': LOG_FILE_NAME,
+            "encoding": "utf-8"
         }
     },
     'loggers': {
