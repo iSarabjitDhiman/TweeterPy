@@ -3,6 +3,7 @@ import time
 import logging.config
 from functools import reduce
 from urllib.parse import urljoin
+from typing import Dict, List
 from .constants import Path, PUBLIC_TOKEN
 from . import config
 from dataclasses import dataclass, field, fields, asdict, _MISSING_TYPE
@@ -198,7 +199,7 @@ class User(_Item):
     default_profile: bool = None
     default_profile_image: bool = None
     description: str = None
-    description_urls: list[dict] = field(default_factory=list)
+    description_urls: List[Dict] = field(default_factory=list)
     favourites_count: int = None
     followers_count: int = None
     friends_count: int = None
@@ -212,7 +213,7 @@ class User(_Item):
     location: str = None
     media_count: int = None
     name: str = None
-    pinned_tweet_ids_str: list[str] = field(default_factory=list)
+    pinned_tweet_ids_str: List[str] = field(default_factory=list)
     possibly_sensitive: bool = None
     professional_type: str = None
     profile_banner_url: str = None
@@ -225,12 +226,12 @@ class User(_Item):
     statuses_count: int = None
     translator_type: str = None
     url: str = None
-    urls: list[dict] = field(default_factory=list)
+    urls: List[Dict] = field(default_factory=list)
     verification_info: dict = None
     verified: bool = None
     verified_phone_status: bool = None
     verified_type: str = None
-    withheld_in_countries: list[str] = field(default_factory=list)
+    withheld_in_countries: List[str] = field(default_factory=list)
 
     def __post_init__(self):
         custom_keys = {"urls": ("entities", "url", "urls"),
@@ -249,7 +250,7 @@ class Tweet(_Item):
     favorite_count: int = None
     favorited: bool = None
     full_text: str = None
-    hashtags: list[str] = field(default_factory=list)
+    hashtags: List[str] = field(default_factory=list)
     id_str: str = None
     in_reply_to_screen_name: str = None
     in_reply_to_status_id_str: str = None
@@ -270,7 +271,7 @@ class Tweet(_Item):
     source: str = None
     tweet_url: str = None
     user_id_str: str = None
-    user_mentions: list[dict] = field(default_factory=list)
+    user_mentions: List[Dict] = field(default_factory=list)
     views: dict = field(default_factory=dict)
 
     def __post_init__(self):
