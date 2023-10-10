@@ -33,7 +33,9 @@ class TweeterPy:
     def _generate_request_data(self, endpoint, variables=None, **kwargs):
         # fmt: off - Turns off formatting for this block of code. Just for the readability purpose.
         url = util.generate_url(domain=Path.API_URL, url_path=endpoint)
-        query_params = {"variables": json.dumps({**variables})}
+        query_params = {}
+        if variables:
+            query_params["variables"] = json.dumps(variables)
         if kwargs:
             features = FeatureSwitch().get_query_features(endpoint) or util.generate_features(**kwargs)
             query_params["features"] = json.dumps(features)
@@ -111,11 +113,11 @@ class TweeterPy:
         Returns:
             dict: Currently logged in user's data.
         """
-        url = util.generate_url(url_path=Path.VIEWER_ENDPOINT)
-        query = {"variables": json.dumps({"withCommunitiesMemberships": True,
-                                          "withSubscribedTab": True, "withCommunitiesCreation": True}),
-                 "features": json.dumps(util.generate_features(user_data_features=True))}
-        response = self.session.get(url, params=query)
+        variables = {"withCommunitiesMemberships": True,
+                     "withSubscribedTab": True, "withCommunitiesCreation": True}
+        request_payload = self._generate_request_data(
+            Path.VIEWER_ENDPOINT, variables, user_data_features=True)
+        response = self.session.get(**request_payload)
         try:
             return response.json()
         except:
@@ -140,6 +142,7 @@ class TweeterPy:
             requests.Session: requests.Session Object.
         """
         try:
+            logger.debug("Trying to generate a new session.")
             self.session = requests.Session()
             if config.PROXY is not None:
                 self.session.proxies = config.PROXY
@@ -156,6 +159,7 @@ class TweeterPy:
         except Exception as error:
             logger.exception(f"Couldn't generate a new session.\n{error}\n")
             raise
+        logger.debug("Session has been generated.")
         return self.session
 
     def save_session(self, session=None, session_name=None):
@@ -206,12 +210,25 @@ class TweeterPy:
             username (str, optional): Twitter username or email. Defaults to None.
             password (str, optional): Password. Defaults to None.
         """
+        if "auth_token" in self.session.cookies.keys():
+            self.generate_session()
         if username is None:
             username = str(input("Enter Your Username or Email : ")).strip()
         if password is None:
             password = getpass.getpass()
         TaskHandler().login(username, password)
         util.generate_headers(session=self.session)
+        try:
+            user = self.me
+            username = util.find_nested_key(user, 'screen_name')
+            account_locked = util.find_nested_key(user, 'bounce_location')
+            if account_locked and not username:
+                raise Exception(
+                    "Account logged in but couldn't get the user's details ! Make sure, the given account is working. (Ignore if its working)")
+            if username:
+                print(f"Welcome {username} : Successfully Logged In.")
+        except Exception as error:
+            logger.warn(error)
 
     def get_user_id(self, username):
         """Get user ID of a twitter user.

@@ -40,8 +40,11 @@ def generate_headers(session=None):
     if session:
         if "auth_token" in session.cookies.keys():
             session.get(Path.BASE_URL)
-            session.headers.update(
-                {"X-Csrf-Token": session.cookies.get("ct0", None), "X-Twitter-Auth-Type": "OAuth2Session"})
+            csrf_token = session.cookies.get("ct0", None)
+            auth_headers = {"X-Csrf-Token": csrf_token,
+                            "X-Twitter-Auth-Type": "OAuth2Session"}
+            session.headers.update(auth_headers)
+            headers.update(auth_headers)
     return headers
 
 

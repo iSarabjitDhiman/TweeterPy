@@ -17,7 +17,7 @@ class TaskHandler:
                             "DenyLoginSubtask":{"task_executor": self._check_suspicious_login,"task_parameter":None},
                             "AccountDuplicationCheck":{"task_executor": self._check_account_duplication,"task_parameter":None},
                             "LoginAcid":{"task_executor":self._handle_suspicious_login,"task_parameter":verification_input_data},
-                            "LoginSuccessSubtask":{"task_output": "\nSuccessfully Logged In.."}}
+                            "LoginSuccessSubtask":{"task_output": "\nPlease Wait... Logging In...\n"}}
         return task_flow_mapper
 
     def _get_flow_token(self):

@@ -8,7 +8,6 @@
 <a href="https://discord.gg/pHY6CU5Ke4"> <img alt="Discord" src="https://img.shields.io/discord/1149281691479851018?style=flat&logo=discord&logoColor=white"></a>
 <a href="https://twitter.com/isarabjitdhiman"> <img src="https://img.shields.io/twitter/follow/iSarabjitDhiman?style=social"></a>
 
-
 ## Overview
 
 TweeterPy is a python library to extract data from Twitter. TweeterPy API lets you scrape data from a user's profile like username, userid, bio, followers/followings list, profile media, tweets, etc.
@@ -76,7 +75,7 @@ Check out configuration docs for the available settings.
 - Extracts User's Followers
 - Extracts User's Followings
 - Extracts User's Profile Details
-- Extracts Twitter Profile Media and so on.
+- Extracts Twitter Profile Media and much more.
 
 ## Authors
 
