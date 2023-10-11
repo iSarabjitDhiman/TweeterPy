@@ -70,6 +70,8 @@ LOGGING_CONFIG = {
     }
 }
 
+# Disable/Enable Api Update which occurs at the startup Initialization.
+UPDATE_API = True
 
 if __name__ == "__main__":
     pass

@@ -23,18 +23,20 @@ class ApiUpdater:
         Twitter updates its API quite frequently. Therefore, ApiUpdater checks for the latest updates and modifies the api_endpoints, feature_switches, path etc in constants.py
     """
 
-    def __init__(self):
+    def __init__(self, update_api=True):
         try:
             logger.debug('Updating API...')
             # fmt: off - Turns off formatting for this block of code.
             try:
+                if not update_api:
+                    raise Exception("Skipping API Updates.")
                 page_source = self._get_home_page_source()
                 api_file_url = self._get_api_file_url(page_source)
                 feature_switches = self._get_feature_switches(page_source)
                 api_endpoints_data = self._js_to_py_dict(self._get_api_file_content(api_file_url))
                 self._save_api_data(feature_switches,api_endpoints_data)
-            except:
-                logger.warn("Couldnt get the latest API data.")
+            except Exception as error:
+                logger.warn(f"{error} Couldn't get the latest API data.")
                 logger.debug("Trying to restore API data from the backup file.")
                 feature_switches, api_endpoints_data = self._load_api_data()
             current_api_endpoints = self._get_current_api_endpoints()

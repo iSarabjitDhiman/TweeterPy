@@ -69,3 +69,10 @@ DISABLE_LOGS = False
 # Log Configuration. Set Custom Log configuration in dict format.
 LOGGING_CONFIG = {}
 ```
+
+## API Updates
+
+```python
+# Disable/Enable Api Update which occurs at the startup Initialization.
+UPDATE_API = True
+```

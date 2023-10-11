@@ -19,6 +19,9 @@ from tweeterpy import config
 # config.PROXY = {"http":"127.0.0.1","https":"127.0.0.1"}
 # config.TIMEOUT = 10
 
+# Disable/Enable Api Update which occurs at the startup Initialization.
+# config.UPDATE_API = False
+
 twitter = TweeterPy()
 
 # By Deafult it uses a Guest Session.

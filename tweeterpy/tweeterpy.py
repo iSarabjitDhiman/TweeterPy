@@ -28,7 +28,7 @@ class TweeterPy:
             set_log_level(logging.ERROR, external_only=disable_external_only)
         self.generate_session()
         # update api endpoints
-        ApiUpdater()
+        ApiUpdater(update_api=config.UPDATE_API)
 
     def _generate_request_data(self, endpoint, variables=None, **kwargs):
         # fmt: off - Turns off formatting for this block of code. Just for the readability purpose.

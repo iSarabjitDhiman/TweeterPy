@@ -62,6 +62,7 @@ from tweeterpy import config
 
 config.PROXY = {"http":"127.0.0.1","https":"127.0.0.1"}
 config.TIMEOUT = 10
+config.UPDATE_API = False
 
 ```
 
