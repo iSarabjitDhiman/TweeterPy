@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 dataset_regex = re.compile(r'''exports\s*=\s*{(.*?)},''', re.VERBOSE)
 api_file_regex = re.compile(r'''api:(.*?),''', re.VERBOSE)
+main_file_regex = re.compile(r'''main(.?)(\w*).?js''', re.VERBOSE)
 feature_switch_regex = re.compile(r'''.featureSwitch.:(.*?)}},''', re.VERBOSE)
 # logging.basicConfig(level=logging.DEBUG,
 #                     format='%(asctime)s [%(levelname)s] %(module)s : %(funcName)s : %(lineno)d ::: %(message)s')
@@ -30,10 +31,18 @@ class ApiUpdater:
             try:
                 if not update_api:
                     raise Exception("Skipping API Updates.")
+                api_files_data = []
                 page_source = self._get_home_page_source()
                 api_file_url = self._get_api_file_url(page_source)
+                main_file_url = self._get_main_file_url(page_source)
                 feature_switches = self._get_feature_switches(page_source)
-                api_endpoints_data = self._js_to_py_dict(self._get_api_file_content(api_file_url))
+                if api_file_url:
+                    api_files_data.append(self._get_api_file_content(api_file_url))
+                if main_file_url:
+                    api_files_data.append(self._get_main_file_content(main_file_url))
+                if not api_files_data:
+                    raise Exception("Couldn't get the API files content.")
+                api_endpoints_data = self._js_to_py_dict(api_files_data)
                 self._save_api_data(feature_switches,api_endpoints_data)
             except Exception as error:
                 logger.warn(f"{error} Couldn't get the latest API data.")
@@ -60,18 +69,35 @@ class ApiUpdater:
             api_file_url = f"{Path.TWITTER_CDN}/api.{eval(api_file_name)}a.js"
             logger.debug(f"API Url => {api_file_url}")
         except Exception as error:
-            logger.exception(f"Couldn't get the API Url.\n{error}")
-            raise
+            logger.exception(f"Couldn't get the API file Url.\n{error}")
+            return None
         return api_file_url
+
+    def _get_main_file_url(self, page_source=None):
+        if page_source is None:
+            page_source = self._get_home_page_source
+        try:
+            main_file_name = re.search(main_file_regex, page_source).group(0)
+            main_file_url = f"{Path.TWITTER_CDN}/{main_file_name}"
+            logger.debug(f"Main File Url => {main_file_url}")
+        except Exception as error:
+            logger.exception(f"Couldn't get the main file Url.\n{error}")
+            return None
+        return main_file_url
 
     def _get_api_file_content(self, file_url=None):
         if file_url is None:
             file_url = self._get_api_file_url()
-        return make_request(file_url)
+        return str(make_request(file_url))
+
+    def _get_main_file_content(self, file_url=None):
+        if file_url is None:
+            file_url = self._get_main_file_url()
+        return str(make_request(file_url))
 
     def _js_to_py_dict(sel, page_source):
         if isinstance(page_source, list):
-            page_source = "\n".join([item for item in page_source])
+            page_source = "\n".join([str(item) for item in page_source])
         else:
             page_source = str(page_source)
         matches = []
@@ -79,7 +105,7 @@ class ApiUpdater:
             matches.append(match.group(1))
 
         dict_data = [demjson3.decode("{" + each_match)
-                     for each_match in matches]
+                     for each_match in matches if "function" not in each_match]
         return dict_data
 
     def _map_data(self, old_endpoints, new_endpoints):
