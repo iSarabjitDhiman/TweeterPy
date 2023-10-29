@@ -44,7 +44,7 @@ class TweeterPy:
         logger.debug(f"Request Payload => {request_payload}")
         return request_payload
 
-    def _handle_pagination(self, url, params, end_cursor=None, data_path=None, total=None):
+    def _handle_pagination(self, url, params, end_cursor=None, data_path=None, total=None, pagination=True):
         # fmt: off  - Turns off formatting for this block of code. Just for the readability purpose.
         def filter_data(response):
             filtered_data = []
@@ -56,6 +56,9 @@ class TweeterPy:
                     return filtered_data
             return filtered_data
 
+        if not pagination and total:
+            logger.warn("Either enable the pagination or disable total number of results.")
+            raise Exception("pagination cannot be disabled while the total number of results are specified.")
         data_container = {"data": [],"cursor_endpoint": None, "has_next_page": True, "api_rate_limit":config._RATE_LIMIT_STATS}
         while data_container["has_next_page"]:
             try:
@@ -86,7 +89,7 @@ class TweeterPy:
                 if ((top_cursor and end_cursor) and len(data) == 2) or ((top_cursor or end_cursor) and len(data) == 1) or (not end_cursor):
                     data_container["has_next_page"] = False
 
-                if not data_container["has_next_page"] or (total is not None and len(data_container['data']) >= total):
+                if not data_container["has_next_page"] or (total is not None and len(data_container['data']) >= total) or not pagination:
                     return data_container
             # fmt: on 
             except ConnectionError as error:
@@ -296,7 +299,7 @@ class TweeterPy:
         response = make_request(**request_payload)
         return response['data']['users']
 
-    def get_user_tweets(self, user_id, with_replies=False, end_cursor=None, total=None):
+    def get_user_tweets(self, user_id, with_replies=False, end_cursor=None, total=None, pagination=True):
         """Get Tweets from a user's profile.
 
         Args:
@@ -304,6 +307,7 @@ class TweeterPy:
             with_replies (bool, optional): Set to True if want to get the tweets user replied to, from user's profile page. Defaults to False.
             end_cursor (str, optional): Last endcursor point. (To start from where you left off last time). Defaults to None.
             total (int, optional): Total(Max) number of results you want to get. If None, extracts all results. Defaults to None.
+            pagination (bool, optional): Set to False if want to handle each page request manually. Use end_cursor from the previous page/request to navigate to the next page. Defaults to True.
 
         Returns:
             dict: Returns data, cursor_endpoint, has_next_page
@@ -324,16 +328,17 @@ class TweeterPy:
             query_endpoint, variables, additional_features=True)
         data_path = ('data', 'user', 'result', 'timeline_v2',
                      'timeline', 'instructions')
-        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total)
+        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total, pagination=pagination)
 
     @login_decorator
-    def get_user_media(self, user_id, end_cursor=None, total=None):
+    def get_user_media(self, user_id, end_cursor=None, total=None, pagination=True):
         """Get media from a user's profile.
 
         Args:
             user_id (int): User ID.
             end_cursor (str, optional): Last endcursor point. (To start from where you left off last time). Defaults to None.
             total (int, optional): Total(Max) number of results you want to get. If None, extracts all results. Defaults to None.
+            pagination (bool, optional): Set to False if want to handle each page request manually. Use end_cursor from the previous page/request to navigate to the next page. Defaults to True.
 
         Returns:
             dict: Returns data, cursor_endpoint, has_next_page
@@ -345,9 +350,9 @@ class TweeterPy:
             Path.USER_MEDIA_ENDPOINT, variables, additional_features=True)
         data_path = ('data', 'user', 'result', 'timeline_v2',
                      'timeline', 'instructions')
-        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total)
+        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total, pagination=pagination)
 
-    def get_tweet(self, tweet_id, with_tweet_replies=False, end_cursor=None, total=None):
+    def get_tweet(self, tweet_id, with_tweet_replies=False, end_cursor=None, total=None, pagination=True):
         """Get Tweets from a user's profile.
 
         Args:
@@ -355,6 +360,7 @@ class TweeterPy:
             with_tweet_replies (bool, optional): Set to True if want to get the tweets replies as well. Defaults to False.
             end_cursor (str, optional): Last endcursor point. (To start from where you left off last time). Only applicable if with with_tweet_replies is True. Defaults to None.
             total (int, optional): Total(Max) number of results you want to get. If None, extracts all results. Defaults to None.
+            pagination (bool, optional): Set to False if want to handle each page request manually. Use end_cursor from the previous page/request to navigate to the next page. Defaults to True.
 
         Returns:
             dict: Tweet data.
@@ -379,17 +385,18 @@ class TweeterPy:
                 self.login()
             data_path = (
                 'data', 'threaded_conversation_with_injections_v2', 'instructions')
-            return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total)
+            return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total, pagination=pagination)
         return make_request(**request_payload)
 
     @login_decorator
-    def get_liked_tweets(self, user_id, end_cursor=None, total=None):
+    def get_liked_tweets(self, user_id, end_cursor=None, total=None, pagination=True):
         """Get Tweets liked by a user.
 
         Args:
             user_id (int): User ID.
             end_cursor (str, optional): Last endcursor point. (To start from where you left off last time). Defaults to None.
             total (int, optional): Total(Max) number of results you want to get. If None, extracts all results. Defaults to None.
+            pagination (bool, optional): Set to False if want to handle each page request manually. Use end_cursor from the previous page/request to navigate to the next page. Defaults to True.
 
         Returns:
             dict: Returns data, cursor_endpoint, has_next_page
@@ -401,15 +408,16 @@ class TweeterPy:
             Path.LIKED_TWEETS_ENDPOINT, variables, additional_features=True)
         data_path = ('data', 'user', 'result', 'timeline_v2',
                      'timeline', 'instructions')
-        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total)
+        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total, pagination=pagination)
 
     @login_decorator
-    def get_user_timeline(self, end_cursor=None, total=None):
+    def get_user_timeline(self, end_cursor=None, total=None, pagination=True):
         """Get tweets from home timeline (Home Page).
 
         Args:
             end_cursor (str, optional): Last endcursor point. (To start from where you left off last time). Defaults to None.
             total (int, optional): Total(Max) number of results you want to get. If None, extracts all results. Defaults to None.
+            pagination (bool, optional): Set to False if want to handle each page request manually. Use end_cursor from the previous page/request to navigate to the next page. Defaults to True.
 
         Returns:
             dict: Returns data, cursor_endpoint, has_next_page
@@ -419,16 +427,17 @@ class TweeterPy:
         request_payload = self._generate_request_data(
             Path.HOME_TIMELINE_ENDPOINT, variables, additional_features=True)
         data_path = ('data', 'home', 'home_timeline_urt', 'instructions')
-        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total)
+        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total, pagination=pagination)
 
     @login_decorator
-    def get_list_tweets(self, list_id, end_cursor=None, total=None):
+    def get_list_tweets(self, list_id, end_cursor=None, total=None, pagination=True):
         """Get tweets from a Tweets List.
 
         Args:
             list_id (str/int): Tweets List ID. (Can be extracted from twitter mobile app.)
             end_cursor (str, optional): Last endcursor point. (To start from where you left off last time). Defaults to None.
             total (int, optional): Total(Max) number of results you want to get. If None, extracts all results. Defaults to None.
+            pagination (bool, optional): Set to False if want to handle each page request manually. Use end_cursor from the previous page/request to navigate to the next page. Defaults to True.
 
         Returns:
             dict: Returns data, cursor_endpoint, has_next_page
@@ -438,16 +447,17 @@ class TweeterPy:
             Path.TWEETS_LIST_ENDPOINT, variables, additional_features=True)
         data_path = ('data', 'list', 'tweets_timeline',
                      'timeline', 'instructions')
-        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total)
+        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total, pagination=pagination)
 
     @login_decorator
-    def get_topic_tweets(self, topic_id, end_cursor=None, total=None):
+    def get_topic_tweets(self, topic_id, end_cursor=None, total=None, pagination=True):
         """Get tweets from a Topic.
 
         Args:
             topic_id (str/int): Topic ID.
             end_cursor (str, optional): Last endcursor point. (To start from where you left off last time). Defaults to None.
             total (int, optional): Total(Max) number of results you want to get. If None, extracts all results. Defaults to None.
+            pagination (bool, optional): Set to False if want to handle each page request manually. Use end_cursor from the previous page/request to navigate to the next page. Defaults to True.
 
         Returns:
             dict: Returns data, cursor_endpoint, has_next_page
@@ -457,10 +467,10 @@ class TweeterPy:
             Path.TOPIC_TWEETS_ENDPOINT, variables, additional_features=True)
         data_path = ('data', 'topic_by_rest_id', 'topic_page',
                      'body', 'timeline', 'instructions')
-        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total)
+        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total, pagination=pagination)
 
     @login_decorator
-    def search(self, search_query, end_cursor=None, total=None, search_filter=None):
+    def search(self, search_query, end_cursor=None, total=None, search_filter=None, pagination=True):
         """Get search results.
 
         Args:
@@ -468,6 +478,7 @@ class TweeterPy:
             end_cursor (str, optional): Last endcursor point. (To start from where you left off last time). Defaults to None.
             total (int, optional): Total(Max) Number of results you want to get. If None, extracts all results. Defaults to None.
             search_filter (str, optional): Type of search you want to perform. Available filters - Latest , Top , People , Photos , Videos. Defaults to 'Top'.
+            pagination (bool, optional): Set to False if want to handle each page request manually. Use end_cursor from the previous page/request to navigate to the next page. Defaults to True.
 
         Returns:
             dict: Returns data, cursor_endpoint, has_next_page
@@ -480,10 +491,10 @@ class TweeterPy:
             Path.SEARCH_ENDPOINT, variables, additional_features=True)
         data_path = ('data', 'search_by_raw_query',
                      'search_timeline', 'timeline', 'instructions')
-        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total)
+        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total, pagination=pagination)
 
     @login_decorator
-    def get_friends(self, user_id, follower=False, following=False, mutual_follower=False, end_cursor=None, total=None):
+    def get_friends(self, user_id, follower=False, following=False, mutual_follower=False, end_cursor=None, total=None, pagination=True):
         """Get User's follower, followings or mutual followers.
 
         Args:
@@ -493,6 +504,7 @@ class TweeterPy:
             mutual_followers (bool, optional): Set to True if want to extract mutual follower. Defaults to False.
             end_cursor (str, optional): Last endcursor point. (To start from where you left off last time). Defaults to None.
             total (int, optional): Total(Max) number of results you want to get. If None, extracts all results. Defaults to None.
+            pagination (bool, optional): Set to False if want to handle each page request manually. Use end_cursor from the previous page/request to navigate to the next page. Defaults to True.
 
         Returns:
             dict: Returns data, cursor_endpoint, has_next_page
@@ -508,7 +520,7 @@ class TweeterPy:
             query_path, variables, additional_features=True)
         data_path = ('data', 'user', 'result', 'timeline',
                      'timeline', 'instructions')
-        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total)
+        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total, pagination=pagination)
 
     @login_decorator
     def get_profile_business_category(self, user_id):
@@ -528,13 +540,14 @@ class TweeterPy:
         return response
 
     @login_decorator
-    def get_tweet_likes(self, tweet_id, end_cursor=None, total=None):
+    def get_tweet_likes(self, tweet_id, end_cursor=None, total=None, pagination=True):
         """Returns data about the users who liked the given tweet post.
 
         Args:
             tweet_id (int): Tweet ID.
             end_cursor (str, optional): Last endcursor point. (To start from where you left off last time). Defaults to None.
             total (int, optional): Total(Max) number of results you want to get. If None, extracts all results. Defaults to None.
+            pagination (bool, optional): Set to False if want to handle each page request manually. Use end_cursor from the previous page/request to navigate to the next page. Defaults to True.
 
         Returns:
             dict: Returns data, cursor_endpoint, has_next_page
@@ -544,16 +557,17 @@ class TweeterPy:
         request_payload = self._generate_request_data(
             Path.TWEET_LIKES_ENDPOINT, variables, additional_features=True)
         data_path = ('data', 'favoriters_timeline', 'timeline', 'instructions')
-        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total)
+        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total, pagination=pagination)
 
     @login_decorator
-    def get_retweeters(self, tweet_id, end_cursor=None, total=None):
+    def get_retweeters(self, tweet_id, end_cursor=None, total=None, pagination=True):
         """Returs data about the users who retweeted the given tweet post.
 
         Args:
             tweet_id (int): Tweet ID.
             end_cursor (str, optional): Last endcursor point. (To start from where you left off last time). Defaults to None.
             total (int, optional): Total(Max) number of results you want to get. If None, extracts all results. Defaults to None.
+            pagination (bool, optional): Set to False if want to handle each page request manually. Use end_cursor from the previous page/request to navigate to the next page. Defaults to True.
 
         Returns:
             dict: Returns data, cursor_endpoint, has_next_page
@@ -563,7 +577,7 @@ class TweeterPy:
         request_payload = self._generate_request_data(
             Path.RETWEETED_BY_ENDPOINT, variables, additional_features=True)
         data_path = ('data', 'retweeters_timeline', 'timeline', 'instructions')
-        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total)
+        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total, pagination=pagination)
 
 
 if __name__ == "__main__":
