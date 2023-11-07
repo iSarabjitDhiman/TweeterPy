@@ -483,10 +483,11 @@ class TweeterPy:
         Returns:
             dict: Returns data, cursor_endpoint, has_next_page
         """
+        # typed_query, hashtag_click, trend_click
         search_filter = "Top" if search_filter is None else search_filter
         # Latest , Top , People , Photos , Videos (Product) - Filter
         variables = {"rawQuery": search_query, "count": 20,
-                     "querySource": "hashtag_click", "product": search_filter}
+                     "querySource": "typed_query", "product": search_filter}
         request_payload = self._generate_request_data(
             Path.SEARCH_ENDPOINT, variables, additional_features=True)
         data_path = ('data', 'search_by_raw_query',
