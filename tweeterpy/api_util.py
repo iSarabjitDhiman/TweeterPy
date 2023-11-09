@@ -69,7 +69,7 @@ class ApiUpdater:
             api_file_url = f"{Path.TWITTER_CDN}/api.{eval(api_file_name)}a.js"
             logger.debug(f"API Url => {api_file_url}")
         except Exception as error:
-            logger.exception(f"Couldn't get the API file Url.\n{error}")
+            # logger.exception(f"Couldn't get the API file Url.\n{error}")
             return None
         return api_file_url
 
