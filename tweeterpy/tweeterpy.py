@@ -28,7 +28,7 @@ class TweeterPy:
             set_log_level(logging.ERROR, external_only=disable_external_only)
         self.generate_session()
         # update api endpoints
-        ApiUpdater(update_api=config.UPDATE_API)
+        # ApiUpdater(update_api=config.UPDATE_API)
 
     def _generate_request_data(self, endpoint, variables=None, **kwargs):
         # fmt: off - Turns off formatting for this block of code. Just for the readability purpose.
@@ -483,7 +483,7 @@ class TweeterPy:
         Returns:
             dict: Returns data, cursor_endpoint, has_next_page
         """
-        # typed_query, hashtag_click, trend_click
+        # typed_query, hashtag_click, trend_click, recent_search_click, typeahead_click
         search_filter = "Top" if search_filter is None else search_filter
         # Latest , Top , People , Photos , Videos (Product) - Filter
         variables = {"rawQuery": search_query, "count": 20,
