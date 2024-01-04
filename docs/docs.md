@@ -521,3 +521,22 @@ get_retweeters(tweet_id, end_cursor=None, total=None, pagination=True)
             dict: Returns data, cursor_endpoint, has_next_page
     """
 ```
+
+## Get Highlight Tweets from a User's Profile
+
+```python
+get_user_highlights(user_id, end_cursor=None, total=None, pagination=True)
+
+    """
+        Get highlights from a user's profile.
+
+        Args:
+            user_id (int): User ID.
+            end_cursor (str, optional): Last endcursor point. (To start from where you left off last time). Defaults to None.
+            total (int, optional): Total(Max) number of results you want to get. If None, extracts all results. Defaults to None.
+            pagination (bool, optional): Set to False if want to handle each page request manually. Use end_cursor from the previous page/request to navigate to the next page. Defaults to True.
+
+        Returns:
+            dict: Returns data, cursor_endpoint, has_next_page
+    """
+```

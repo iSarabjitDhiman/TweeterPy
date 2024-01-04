@@ -69,6 +69,7 @@ class Path:
     PROFILE_CATEGORY_ENDPOINT = "6OFpJ3TH3p8JpwOSgfgyhg/BizProfileFetchUser"
     TWEET_LIKES_ENDPOINT = "mpMee2WCjo7Nm4gRRHHnvA/Favoriters"
     RETWEETED_BY_ENDPOINT = "7Fwe5A6kE05QIybims116A/Retweeters"
+    USER_HIGHLIGHTS_ENDPOINT = "w9-i9VNm_92GYFaiyGT1NA/UserHighlightsTweets"
 
 
 class FeatureSwitch:

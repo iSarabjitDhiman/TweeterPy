@@ -582,6 +582,26 @@ class TweeterPy:
             Path.RETWEETED_BY_ENDPOINT, variables, additional_features=True)
         data_path = ('data', 'retweeters_timeline', 'timeline', 'instructions')
         return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total, pagination=pagination)
+    
+    def get_user_highlights(self, user_id, end_cursor=None, total=None, pagination=True):
+        """Get highlights from a user's profile.
+
+        Args:
+            user_id (int): User ID.
+            end_cursor (str, optional): Last endcursor point. (To start from where you left off last time). Defaults to None.
+            total (int, optional): Total(Max) number of results you want to get. If None, extracts all results. Defaults to None.
+            pagination (bool, optional): Set to False if want to handle each page request manually. Use end_cursor from the previous page/request to navigate to the next page. Defaults to True.
+
+        Returns:
+            dict: Returns data, cursor_endpoint, has_next_page
+        """
+        user_id = self.get_user_id(user_id)
+        variables = {"userId": user_id, "count": 100,
+                     "includePromotedContent": True, "withVoice": True}
+        request_payload = self._generate_request_data(
+            Path.USER_HIGHLIGHTS_ENDPOINT, variables, additional_features=True)
+        data_path = ('data', 'user', 'result', 'timeline', 'timeline', 'instructions')
+        return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total, pagination=pagination)
 
 
 if __name__ == "__main__":
