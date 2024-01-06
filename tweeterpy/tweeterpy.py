@@ -369,8 +369,8 @@ class TweeterPy:
             dict: Tweet data.
         """
         if end_cursor is not None and not with_tweet_replies:
-            raise Exception(
-                "Either set with_tweet_replies to True or end_cursor to None.")
+            logger.exception("Either set with_tweet_replies to True or end_cursor to None.")
+            raise
         referer = 'tweet' if with_tweet_replies else random.choice(
             ['profile', 'home'])
         variables = {"focalTweetId": tweet_id, "referrer": referer, "with_rux_injections": False, "includePromotedContent": True,
@@ -514,8 +514,8 @@ class TweeterPy:
             dict: Returns data, cursor_endpoint, has_next_page
         """
         if (not follower and not following and not mutual_follower) or (follower and following and mutual_follower):
-            raise Exception(
-                "Set one of the (follower,following,mutual_follower) to True.")
+            logger.exception("Set one of the (follower,following,mutual_follower) to True.")
+            raise
         user_id = self.get_user_id(user_id)
         query_path = Path.FOLLOWERS_ENDPOINT if follower else Path.FOLLOWINGS_ENDPOINT if following else Path.MUTUAL_FOLLOWERS_ENDPOINT if mutual_follower else None
         variables = {"userId": user_id, "count": 100,
