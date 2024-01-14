@@ -1,3 +1,4 @@
+import re
 import datetime
 import time
 import logging.config
@@ -79,6 +80,18 @@ def generate_url(domain=None, url_path=None):
     if not domain:
         domain = Path.API_URL
     return urljoin(domain, url_path)
+
+def find_guest_token(page_source):
+    guest_token_regex = re.compile(r"""gt=(\d+);""",re.VERBOSE)
+    try:
+        guest_token_match = re.search(guest_token_regex,str(page_source))
+        if not guest_token_match:
+            raise Exception("Couldn't find guest token")
+        guest_token = guest_token_match.group(1)
+        return guest_token
+    except Exception as error:
+        logger.error(error)
+        raise
 
 
 def check_for_errors(response):

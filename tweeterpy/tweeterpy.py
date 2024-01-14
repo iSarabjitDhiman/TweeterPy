@@ -154,9 +154,9 @@ class TweeterPy:
                 self.session.proxies = config.PROXY
                 self.session.verify = False
             self.session.headers.update(util.generate_headers())
-            make_request(Path.BASE_URL, session=self.session)
+            home_page = make_request(Path.BASE_URL, session=self.session)
             guest_token = make_request(
-                Path.GUEST_TOKEN_URL, method="POST", session=self.session)['guest_token']
+                Path.GUEST_TOKEN_URL, method="POST", session=self.session).get('guest_token', util.find_guest_token(home_page))
             self.session.headers.update({'X-Guest-Token': guest_token})
             self.session.cookies.update({'gt': guest_token})
             if auth_token:
