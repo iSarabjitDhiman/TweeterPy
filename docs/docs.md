@@ -42,6 +42,43 @@ print(twitter.get_user_id('elonmusk'))
 
 ```
 
+> ### Example - Get User Tweets (Pagination Usage).
+
+```python
+import time, random
+from tweeterpy import TweeterPy
+from tweeterpy import config
+from tweeterpy.util import RateLimitError
+
+# Check Configuration docs for the available settings.
+# config.PROXY = {"http":"127.0.0.1","https":"127.0.0.1"}
+# config.TIMEOUT = 10
+
+twitter = TweeterPy()
+# login if required
+
+user_tweets = []
+has_more = True
+cursor = None
+while has_more:
+    try:
+        response = None
+        response = twitter.get_user_tweets('elonmusk', end_cursor=cursor, pagination=False)
+        user_tweets.extend(response['data'])
+        has_more = response.get('has_next_page')
+        api_rate_limits = response.get('api_rate_limit')
+        limit_exhausted = api_rate_limits.get('rate_limit_exhausted')
+        if has_more:
+            cursor = response.get('cursor_endpoint')
+        ## YOUR CUSTOM CODE HERE (DATA HANDLING, REQUEST DELAYS, SESSION SHUFFLING ETC.)
+        ## time.sleep(random.uniform(7,10))
+        if limit_exhausted:
+            raise RateLimitError
+    except Exception as error:
+        print(error)
+        break
+```
+
 > ### Example - Get Data out of Nested Python Dict/List With User/Tweet Dataclasses (Easy Way)
 
 ```python
