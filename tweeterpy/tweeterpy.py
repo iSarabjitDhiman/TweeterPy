@@ -82,7 +82,10 @@ class TweeterPy:
                     end_cursor = reduce(dict.get, ('content','value'),end_cursor[0]) or reduce(dict.get, ('content','itemContent','value'),end_cursor[0])
                 data_container['data'].extend(filter_data(data))
                 if config._RATE_LIMIT_STATS:
-                    data_container['api_rate_limit'].update(config._RATE_LIMIT_STATS)
+                    if data_container['api_rate_limit']:
+                        data_container['api_rate_limit'].update(config._RATE_LIMIT_STATS)
+                    else:
+                        data_container['api_rate_limit'] = config._RATE_LIMIT_STATS
 
                 print(len(data_container['data']), end="\r")
 
