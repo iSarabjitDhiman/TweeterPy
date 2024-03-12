@@ -96,13 +96,13 @@ def find_guest_token(page_source):
 
 def check_for_errors(response):
     if isinstance(response, dict) and "errors" in response.keys():
-        if "data" not in response.keys():
+        if not response.get("data"):
             error_message = "\n".join([error['message']
                                        for error in response['errors']])
             raise Exception(error_message)
-    if "data" in response.keys():
-        if not response.get("data"):
-            raise Exception("Couldn't fetch data.")
+    # if "data" in response.keys():
+    #     if not response.get("data"):
+    #         raise Exception("Couldn't fetch data.")
     # return response['flow_token'] # For manual Way - login_util
     return response
 
