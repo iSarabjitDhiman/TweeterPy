@@ -4,7 +4,7 @@ bs4==0.0.1
 certifi==2023.7.22
 charset-normalizer==3.1.0
 demjson3==3.0.6
-idna==3.4
+idna==3.7
 lxml==4.9.2
 requests==2.31.0
 six==1.16.0
