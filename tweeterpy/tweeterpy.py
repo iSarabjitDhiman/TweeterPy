@@ -205,7 +205,7 @@ class TweeterPy:
             bool: Returns True if the user is logged in.
         """
         if "auth_token" in self.session.cookies.keys():
-            logger.info('User is authenticated.')
+            # logger.info('User is authenticated.')
             return True
         return False
 
