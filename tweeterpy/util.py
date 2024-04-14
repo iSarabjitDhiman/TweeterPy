@@ -184,7 +184,7 @@ class _Item:
             legacy_dataset = find_nested_key(self._dataset,legacy_path) if legacy_path else None
             original_dataset = find_nested_key(self._dataset,dataset_path) if dataset_path else self._dataset
             for dataset in [legacy_dataset,original_dataset]:
-                if dataset is None:
+                if dataset is None or not isinstance(dataset,dict):
                     continue
                 if complex_keys and isinstance(complex_keys,dict):
                     for item_key, path in complex_keys.items():
@@ -250,11 +250,14 @@ class User(_Item):
     withheld_in_countries: List[str] = field(default_factory=list)
 
     def __post_init__(self):
+        user_result = find_nested_key(self._dataset, ("user_results", "result"))
+        self._dataset = user_result or self._dataset
         custom_keys = {"urls": ("entities", "url", "urls"),
                        "description_urls": ("entities", "description", "urls")}
         self.load_data(direct_keys=['id', 'rest_id', 'description', 'url'],
                        legacy_path="legacy", complex_keys=custom_keys)
-        setattr(self, "profile_url", f"{Path.BASE_URL}{self.screen_name}")
+        profile_url = f"{Path.BASE_URL}{self.screen_name}" if self.screen_name else None
+        setattr(self, "profile_url", profile_url)
 
 
 @dataclass
@@ -291,11 +294,13 @@ class Tweet(_Item):
     views: dict = field(default_factory=dict)
 
     def __post_init__(self):
-        custom_keys = {"screen_name": ("user_results", "result", "legacy", "screen_name"), "name": (
-            "user_results", "result", "legacy", "name")}
-        self.load_data(direct_keys=['id_str', 'rest_id', 'source', 'is_translatable', 'possibly_sensitive', 'views'],
-                       legacy_path=("tweet_results", "result", "legacy"), dataset_path=("tweet_results", "result"),
-                       complex_keys=custom_keys)
+        is_status = find_nested_key(self._dataset, ("tweetResult", "result"))
+        legacy_path = ("tweetResult" if is_status else "tweet_results", "result", "legacy")
+        dataset_path = ("tweetResult" if is_status else "tweet_results", "result")
+        custom_keys = {"screen_name": ("core", "user_results", "result", "legacy", "screen_name"), "name": (
+            "core", "user_results", "result", "legacy", "name")}
+        self.load_data(direct_keys=['id_str', 'rest_id', 'source', 'is_translatable', 'possibly_sensitive', 'views', 'created_at'],
+                       legacy_path=legacy_path, dataset_path=dataset_path, complex_keys=custom_keys)
         setattr(self, "tweet_url",
                 f"{Path.BASE_URL}{self.screen_name}/status/{self.rest_id}")
         setattr(self, "original_tweet",
