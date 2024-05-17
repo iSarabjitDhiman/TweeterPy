@@ -38,14 +38,15 @@ class Color:
 class Path:
     # Data will be updated automatically upon API update (Manipulated by ApiUpdater in api_util.py).
     # URLS
-    DOMAIN = "twitter.com"
-    BASE_URL = "https://www.twitter.com/"
-    API_URL = "https://twitter.com/i/api/graphql/"
-    TASK_URL = "https://api.twitter.com/1.1/onboarding/task.json"
-    GUEST_TOKEN_URL = "https://api.twitter.com/1.1/guest/activate.json"
+    DOMAIN = "x.com"
+    BASE_URL = "https://x.com/"
+    API_URL = "https://x.com/i/api/graphql/"
+    TASK_URL = "https://api.x.com/1.1/onboarding/task.json"
+    GUEST_TOKEN_URL = "https://api.x.com/1.1/guest/activate.json"
     JAVSCRIPT_INSTRUMENTATION_URL = "https://twitter.com/i/js_inst"
     TWITTER_CDN = "https://abs.twimg.com/responsive-web/client-web"
-    HOME_TIMELINE_GUEST_URL = "https://twitter.com/i/api/2/guide.json"
+    HOME_TIMELINE_GUEST_URL = "https://x.com/i/api/2/guide.json"
+    X_MIGRATE_URL = "https://x.com/x/migrate"
     # ENDPOINTS
     HOME_TIMELINE_ENDPOINT = "ggIgQGz-fN1Z9YBhAoTCVA/HomeTimeline"
     HOME_LATEST_TIMELINE_ENDPOINT = "Js4oMnCV2D4gpEocblJ6Tg/HomeLatestTimeline"

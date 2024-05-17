@@ -1,6 +1,7 @@
 import re
 import datetime
 import time
+import bs4
 import logging.config
 from functools import reduce
 from urllib.parse import urljoin
@@ -27,25 +28,27 @@ class RateLimitError(Exception):
         super().__init__(message)
 
 
-def generate_headers(session=None):
+def generate_headers(session=None, custom_headers=None):
     headers = {"Authority": Path.DOMAIN,
                "Accept-Encoding": "gzip, deflate, br",
                "Accept-Language": "en-US,en;q=0.9",
-               "Authorization": PUBLIC_TOKEN,
                "Cache-Control": "no-cache",
                "Referer": Path.BASE_URL,
                "User-Agent": config._USER_AGENT,
                "X-Twitter-Active-User": "yes",
                "X-Twitter-Client-Language": "en"
                }
+    if custom_headers and isinstance(custom_headers, dict):
+        headers.update(custom_headers)
     if session:
+        headers.update({"Authorization": PUBLIC_TOKEN})
+        headers.update(dict(session.headers))
         if "auth_token" in session.cookies.keys():
             session.get(Path.BASE_URL)
             csrf_token = session.cookies.get("ct0", None)
-            auth_headers = {"X-Csrf-Token": csrf_token,
-                            "X-Twitter-Auth-Type": "OAuth2Session"}
-            session.headers.update(auth_headers)
-            headers.update(auth_headers)
+            headers.update({"X-Csrf-Token": csrf_token,
+                            "X-Twitter-Auth-Type": "OAuth2Session"})
+        session.headers.update(headers)
     return headers
 
 
@@ -93,6 +96,23 @@ def find_guest_token(page_source):
         logger.error(error)
         raise
 
+def handle_x_migration(session):
+    home_page = None
+    try:
+        response = session.request(method="GET", url=Path.BASE_URL)
+        home_page = bs4.BeautifulSoup(response.content, 'lxml')
+        migration_form = home_page.select_one("form[name='f']") or home_page.select_one(f"form[action='{Path.X_MIGRATE_URL}']")
+        if migration_form:
+            url = migration_form.attrs.get("action", Path.X_MIGRATE_URL)
+            method = migration_form.attrs.get("method", "POST")
+            request_payload = {input_field.get("name"):input_field.get("value") for input_field in migration_form.select("input")}
+            response = session.request(method=method, url=url, data=request_payload)
+            home_page = bs4.BeautifulSoup(response.content, 'lxml')
+    except Exception as error:
+        logger.error(error)
+    finally:
+        generate_headers(session=session)
+        return home_page
 
 def check_for_errors(response):
     if isinstance(response, dict) and "errors" in response.keys():

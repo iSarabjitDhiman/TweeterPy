@@ -28,10 +28,12 @@ class TweeterPy:
             set_log_level(logging.ERROR, external_only=disable_external_only)
         self.generate_session()
         # update api endpoints
+        self.__token = self.session.headers.pop("Authorization")
         try:
             ApiUpdater(update_api=config.UPDATE_API)
         except Exception as error:
             logger.warn(error)
+        self.session.headers.update({"Authorization":self.__token})
 
     def _generate_request_data(self, endpoint, variables=None, **kwargs):
         # fmt: off - Turns off formatting for this block of code. Just for the readability purpose.
@@ -154,7 +156,8 @@ class TweeterPy:
                 self.session.proxies = config.PROXY
                 self.session.verify = False
             self.session.headers.update(util.generate_headers())
-            home_page = make_request(Path.BASE_URL, session=self.session)
+            # home_page = make_request(Path.BASE_URL, session=self.session)
+            home_page = util.handle_x_migration(session=self.session)
             guest_token = make_request(
                 Path.GUEST_TOKEN_URL, method="POST", session=self.session).get('guest_token', util.find_guest_token(home_page))
             self.session.headers.update({'X-Guest-Token': guest_token})
