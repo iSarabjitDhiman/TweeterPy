@@ -68,9 +68,9 @@ class TweeterPy:
         while data_container["has_next_page"]:
             try:
                 if end_cursor:
-                    varaibles = json.loads(params['variables'])
-                    varaibles['cursor'] = end_cursor
-                    params['variables'] = json.dumps(varaibles)
+                    variables = json.loads(params['variables'])
+                    variables['cursor'] = end_cursor
+                    params['variables'] = json.dumps(variables)
                 response = make_request(url, params=params)
                 data = [item for item in reduce(
                     dict.get, data_path, response) if item['type'] == 'TimelineAddEntries'][0]['entries']
