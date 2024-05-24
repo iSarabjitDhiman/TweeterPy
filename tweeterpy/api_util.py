@@ -24,7 +24,8 @@ class ApiUpdater:
         Twitter updates its API quite frequently. Therefore, ApiUpdater checks for the latest updates and modifies the api_endpoints, feature_switches, path etc in constants.py
     """
 
-    def __init__(self, update_api=True):
+    def __init__(self, update_api=True, session=None):
+        self.__session = session
         try:
             logger.debug('Updating API...')
             # fmt: off - Turns off formatting for this block of code.
@@ -59,7 +60,7 @@ class ApiUpdater:
             # fmt: on 
 
     def _get_home_page_source(self):
-        return str(make_request(Path.BASE_URL))
+        return str(make_request(Path.BASE_URL, session=self.__session))
 
     def _get_api_file_url(self, page_source=None):
         if page_source is None:
@@ -88,12 +89,12 @@ class ApiUpdater:
     def _get_api_file_content(self, file_url=None):
         if file_url is None:
             file_url = self._get_api_file_url()
-        return str(make_request(file_url))
+        return str(make_request(file_url, session=self.__session))
 
     def _get_main_file_content(self, file_url=None):
         if file_url is None:
             file_url = self._get_main_file_url()
-        return str(make_request(file_url))
+        return str(make_request(file_url, session=self.__session))
 
     def _js_to_py_dict(sel, page_source):
         if isinstance(page_source, list):

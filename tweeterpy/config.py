@@ -1,5 +1,4 @@
 # Configuration File
-_DEFAULT_SESSION = None  # Used to reuse generated session. DON'T CHANGE IT
 _RATE_LIMIT_STATS = None  # Used to keep a track of api limits. DON'T CHANGE IT
 
 _USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36'

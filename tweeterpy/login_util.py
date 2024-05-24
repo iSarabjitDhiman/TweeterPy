@@ -5,8 +5,8 @@ from .logging_util import disable_logger
 
 
 class TaskHandler:
-    def __init__(self):
-        pass
+    def __init__(self, session=None):
+        self.__session = session
 
     def _create_task_mapper(self, username, password, verification_input_data):
         # fmt: off  - Turns off formatting for this block of code. Just for the readability purpose.
@@ -32,11 +32,11 @@ class TaskHandler:
                                  'phone_verification': 4, 'privacy_options': 1, 'security_key': 3, 'select_avatar': 4, 'select_banner': 2,
                                  'settings_list': 7, 'show_code': 1, 'sign_up': 2, 'sign_up_review': 4, 'tweet_selection_urt': 1, 'update_users': 1,
                                  'upload_media': 1, 'user_recommendations_list': 4, 'user_recommendations_urt': 1, 'wait_spinner': 3, 'web_modal': 1}}
-        return make_request(Path.TASK_URL, method="POST", params=params, json=payload)
+        return make_request(Path.TASK_URL, method="POST", params=params, json=payload, session=self.__session)
 
     def _get_javscript_instrumentation_subtask(self):
         params = {'c_name': 'ui_metrics'}
-        return make_request(Path.JAVSCRIPT_INSTRUMENTATION_URL, params=params)
+        return make_request(Path.JAVSCRIPT_INSTRUMENTATION_URL, params=params, session=self.__session)
 
     def _get_user_flow_token(self, flow_token, subtask_id="LoginJsInstrumentationSubtask"):
         payload = {'flow_token': flow_token,
@@ -44,7 +44,7 @@ class TaskHandler:
                                       'js_instrumentation': {
                                           'response': '',
                                           'link': 'next_link'}}]}
-        return make_request(Path.TASK_URL, method="POST", json=payload)
+        return make_request(Path.TASK_URL, method="POST", json=payload, session=self.__session)
 
     @disable_logger
     def _get_password_flow_token(self, flow_token, subtask_id="LoginEnterUserIdentifierSSO", username=None):
@@ -53,31 +53,31 @@ class TaskHandler:
                                       'settings_list': {
                                           'setting_responses': [{'key': 'user_identifier', 'response_data': {'text_data': {'result': username}}}],
                                           'link': 'next_link'}}]}
-        return make_request(Path.TASK_URL, method="POST", json=payload)
+        return make_request(Path.TASK_URL, method="POST", json=payload, session=self.__session)
 
     @disable_logger
     def _get_account_duplication_flow_token(self, flow_token, subtask_id="LoginEnterPassword", password=None):
         payload = {'flow_token': flow_token,
                    'subtask_inputs': [{'subtask_id': subtask_id,
                                       'enter_password': {'password': password, 'link': 'next_link'}}]}
-        return make_request(Path.TASK_URL, method="POST", json=payload)
+        return make_request(Path.TASK_URL, method="POST", json=payload, session=self.__session)
 
     def _check_suspicious_login(self, flow_token, subtask_id="DenyLoginSubtask"):
         payload = {"flow_token": flow_token,
                    "subtask_inputs": [{"subtask_id": subtask_id, "cta": {"link": "next_link"}}]}
-        return make_request(Path.TASK_URL, method="POST", json=payload)
+        return make_request(Path.TASK_URL, method="POST", json=payload, session=self.__session)
 
     def _check_account_duplication(self, flow_token, subtask_id="AccountDuplicationCheck"):
         payload = {'flow_token': flow_token,
                    'subtask_inputs': [{'subtask_id': subtask_id, 'check_logged_in_account': {'link': 'AccountDuplicationCheck_false'}}]}
-        return make_request(Path.TASK_URL, method="POST", json=payload)
+        return make_request(Path.TASK_URL, method="POST", json=payload, session=self.__session)
 
     def _handle_suspicious_login(self, flow_token, subtask_id="LoginAcid",verification_input_data=None):
         payload = {"flow_token": flow_token,
                    "subtask_inputs": [{"subtask_id": subtask_id, "enter_text": {"text": verification_input_data,"link":"next_link"}}]}
         handle_incorrect_input = True
         while handle_incorrect_input:
-            response = make_request(Path.TASK_URL, method="POST", json=payload, skip_error_checking=True)
+            response = make_request(Path.TASK_URL, method="POST", json=payload, skip_error_checking=True, session=self.__session)
             if isinstance(response, dict) and "errors" in response.keys():
                 error_message = "\n".join([error['message'] for error in response['errors']])
                 payload['subtask_inputs'][0]['enter_text']['text'] = str(input(f"{error_message} - Type again ==> "))

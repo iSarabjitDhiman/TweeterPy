@@ -34,13 +34,10 @@ def _show_saved_sessions(directory_path=None):
 
 
 def save_session(filename=None, path=None, session=None):
-    if session is None or not isinstance(session, requests.Session):
-        logger.warn(
-            "No Session object given. Trying to save existing/default Session...")
-        if config._DEFAULT_SESSION:
-            session = config._DEFAULT_SESSION
-        else:
-            raise TypeError(f'{session} is not a requests Session Object...')
+    if session is None:
+        raise NameError("name 'session' is not defined.")
+    if not isinstance(session, requests.Session):
+        raise TypeError(f"Invalid session type. {session} is not a requests.Session Object...")
     if filename is None:
         filename = str(
             input("Enter Username/Account Name to Save the Session : ")).strip()
@@ -54,15 +51,16 @@ def save_session(filename=None, path=None, session=None):
 
 
 def load_session(file_path=None, session=None):
+    if session is None:
+        raise NameError("name 'session' is not defined.")
+    if not isinstance(session, requests.Session):
+        raise TypeError(f"Invalid session type. {session} is not a requests.Session Object...")
     if file_path is None:
         file_path = _show_saved_sessions()
     with open(file_path, "rb") as file:
         headers, cookies = pickle.load(file)
-    if session is None:
-        session = config._DEFAULT_SESSION or requests.Session()
     session.headers = headers
     session.cookies = cookies
-    config._DEFAULT_SESSION = session
     return session
 
 

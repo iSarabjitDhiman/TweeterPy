@@ -28,12 +28,12 @@ class TweeterPy:
             set_log_level(logging.ERROR, external_only=disable_external_only)
         self.generate_session()
         # update api endpoints
-        self.__token = self.session.headers.pop("Authorization")
+        self.__token = self.__session.headers.pop("Authorization")
         try:
-            ApiUpdater(update_api=config.UPDATE_API)
+            ApiUpdater(update_api=config.UPDATE_API, session=self.__session)
         except Exception as error:
             logger.warn(error)
-        self.session.headers.update({"Authorization":self.__token})
+        self.__session.headers.update({"Authorization":self.__token})
 
     def _generate_request_data(self, endpoint, variables=None, **kwargs):
         # fmt: off - Turns off formatting for this block of code. Just for the readability purpose.
@@ -45,11 +45,11 @@ class TweeterPy:
             features = FeatureSwitch().get_query_features(endpoint) or util.generate_features(**kwargs)
             query_params["features"] = json.dumps(features)
         # fmt: on   
-        request_payload = {"url": url, "params": query_params}
+        request_payload = {"url": url, "params": query_params, "session":self.__session}
         logger.debug(f"Request Payload => {request_payload}")
         return request_payload
 
-    def _handle_pagination(self, url, params, end_cursor=None, data_path=None, total=None, pagination=True):
+    def _handle_pagination(self, url, params, end_cursor=None, data_path=None, total=None, pagination=True, **kwargs):
         # fmt: off  - Turns off formatting for this block of code. Just for the readability purpose.
         def filter_data(response):
             filtered_data = []
@@ -65,13 +65,14 @@ class TweeterPy:
             logger.warn("Either enable the pagination or disable total number of results.")
             raise Exception("pagination cannot be disabled while the total number of results are specified.")
         data_container = {"data": [],"cursor_endpoint": None, "has_next_page": True, "api_rate_limit":config._RATE_LIMIT_STATS}
+        session = kwargs.get("session", self.__session)
         while data_container["has_next_page"]:
             try:
                 if end_cursor:
                     variables = json.loads(params['variables'])
                     variables['cursor'] = end_cursor
                     params['variables'] = json.dumps(variables)
-                response = make_request(url, params=params)
+                response = make_request(url, params=params, session=session)
                 data = [item for item in reduce(
                     dict.get, data_path, response) if item['type'] == 'TimelineAddEntries'][0]['entries']
                 top_cursor = [
@@ -107,12 +108,11 @@ class TweeterPy:
 
     @property
     def session(self):
-        return self._session
+        return self.__session
 
     @session.setter
     def session(self, session):
-        self._session = session
-        config._DEFAULT_SESSION = session
+        self.__session = session
 
     @property
     def me(self):
@@ -125,9 +125,11 @@ class TweeterPy:
                      "withSubscribedTab": True, "withCommunitiesCreation": True}
         request_payload = self._generate_request_data(
             Path.VIEWER_ENDPOINT, variables, user_data_features=True)
-        response = self.session.get(**request_payload)
         try:
-            return response.json()
+            response = make_request(**request_payload)
+            if not isinstance(response, dict):
+                raise Exception(response)
+            return response
         except:
             logger.info("Guest Session")
             return
@@ -151,25 +153,29 @@ class TweeterPy:
         """
         try:
             logger.debug("Trying to generate a new session.")
-            self.session = requests.Session()
+            session = requests.Session()
             if config.PROXY is not None:
-                self.session.proxies = config.PROXY
-                self.session.verify = False
-            self.session.headers.update(util.generate_headers())
-            # home_page = make_request(Path.BASE_URL, session=self.session)
-            home_page = util.handle_x_migration(session=self.session)
-            guest_token = make_request(
-                Path.GUEST_TOKEN_URL, method="POST", session=self.session).get('guest_token', util.find_guest_token(home_page))
-            self.session.headers.update({'X-Guest-Token': guest_token})
-            self.session.cookies.update({'gt': guest_token})
+                session.proxies = config.PROXY
+                session.verify = False
+            session.headers.update(util.generate_headers())
+            # home_page = make_request(Path.BASE_URL, session=session)
+            home_page = util.handle_x_migration(session=session)
+            try:
+                guest_token = make_request(
+                    Path.GUEST_TOKEN_URL, method="POST", session=session).get('guest_token', util.find_guest_token(home_page))
+            except Exception as error:
+                logger.error(error)
+            session.headers.update({'X-Guest-Token': guest_token})
+            session.cookies.update({'gt': guest_token})
             if auth_token:
-                self.session.cookies.update({'auth_token': auth_token})
-                util.generate_headers(self.session)
+                session.cookies.update({'auth_token': auth_token})
+                util.generate_headers(session)
         except Exception as error:
             logger.exception(f"Couldn't generate a new session.\n{error}\n")
             raise
         logger.debug("Session has been generated.")
-        return self.session
+        self.__session = session
+        return self.__session
 
     def save_session(self, session=None, session_name=None):
         """Save a logged in session to avoid frequent logins in future.
@@ -182,7 +188,7 @@ class TweeterPy:
             path: Saved session file path.
         """
         if session is None:
-            session = self.session
+            session = self.__session
         if session_name is None:
             session_name = self.me['data']['viewer']['user_results']['result']['legacy']['screen_name']
         return save_session(filename=session_name, session=session)
@@ -197,9 +203,11 @@ class TweeterPy:
         Returns:
             requests.Session: Restored session.
         """
-        self.session = load_session(
+        if session is None:
+            session = self.generate_session()
+        self.__session = load_session(
             file_path=session_file_path, session=session)
-        return self.session
+        return self.__session
 
     def logged_in(self):
         """Check if the user is logged in.
@@ -207,7 +215,7 @@ class TweeterPy:
         Returns:
             bool: Returns True if the user is logged in.
         """
-        if "auth_token" in self.session.cookies.keys():
+        if "auth_token" in self.__session.cookies.keys():
             # logger.info('User is authenticated.')
             return True
         return False
@@ -219,14 +227,14 @@ class TweeterPy:
             username (str, optional): Twitter username or email. Defaults to None.
             password (str, optional): Password. Defaults to None.
         """
-        if "auth_token" in self.session.cookies.keys():
+        if "auth_token" in self.__session.cookies.keys():
             self.generate_session()
         if username is None:
             username = str(input("Enter Your Username or Email : ")).strip()
         if password is None:
             password = getpass.getpass()
-        TaskHandler().login(username, password)
-        util.generate_headers(session=self.session)
+        TaskHandler(session=self.__session).login(username, password)
+        util.generate_headers(session=self.__session)
         try:
             user = self.me
             username = util.find_nested_key(user, 'screen_name')
