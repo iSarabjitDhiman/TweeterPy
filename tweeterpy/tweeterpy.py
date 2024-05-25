@@ -161,10 +161,14 @@ class TweeterPy:
             # home_page = make_request(Path.BASE_URL, session=session)
             home_page = util.handle_x_migration(session=session)
             try:
-                guest_token = make_request(
-                    Path.GUEST_TOKEN_URL, method="POST", session=session).get('guest_token', util.find_guest_token(home_page))
+                response = make_request(
+                    Path.GUEST_TOKEN_URL, method="POST", session=session)
+                if not response.get('guest_token'):
+                    logger.debug(response)
+                guest_token = response.get('guest_token', util.find_guest_token(home_page))
             except Exception as error:
                 logger.error(error)
+                raise
             session.headers.update({'X-Guest-Token': guest_token})
             session.cookies.update({'gt': guest_token})
             if auth_token:
