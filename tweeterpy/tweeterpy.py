@@ -74,7 +74,9 @@ class TweeterPy:
                     params['variables'] = json.dumps(variables)
                 response = make_request(url, params=params, session=session)
                 data = [item for item in reduce(
-                    dict.get, data_path, response) if item['type'] == 'TimelineAddEntries'][0]['entries']
+                    dict.get, data_path, response) if item['type'] == 'TimelineAddEntries']
+                if data:
+                    data = data[0]['entries']
                 top_cursor = [
                     entry for entry in data if entry['entryId'].startswith('cursor-top')]
                 if top_cursor:
