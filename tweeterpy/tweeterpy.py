@@ -72,15 +72,23 @@ class TweeterPy:
                     variables = json.loads(params['variables'])
                     variables['cursor'] = end_cursor
                     params['variables'] = json.dumps(variables)
+
                 response = make_request(url, params=params, session=session)
                 data = [item for item in reduce(
-                    dict.get, data_path, response) if item['type'] == 'TimelineAddEntries'][0]['entries']
+                    dict.get, data_path, response) if item['type'] == 'TimelineAddEntries' or item['type'] == 'TimelineReplaceEntry']
+                replace_entries=[en['entry'] for en in data if en['type']=='TimelineReplaceEntry']
+                if data:
+                    data = data[0]['entries']
+                for replace_en in replace_entries:
+                    data.append(replace_en)
                 top_cursor = [
                     entry for entry in data if entry['entryId'].startswith('cursor-top')]
                 if top_cursor:
                     top_cursor = reduce(dict.get, ('content','value'),top_cursor[0]) or reduce(dict.get, ('content','itemContent','value'),end_cursor[0])
+
                 end_cursor = [
                     entry for entry in data if entry['entryId'].startswith('cursor-bottom')]
+
                 if end_cursor:
                     end_cursor = reduce(dict.get, ('content','value'),end_cursor[0]) or reduce(dict.get, ('content','itemContent','value'),end_cursor[0])
                 data_container['data'].extend(filter_data(data))
