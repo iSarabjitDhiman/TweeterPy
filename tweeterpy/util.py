@@ -30,7 +30,6 @@ class RateLimitError(Exception):
 
 def generate_headers(session=None, custom_headers=None):
     headers = {"Authority": Path.DOMAIN,
-               "Accept-Encoding": "gzip, deflate, br",
                "Accept-Language": "en-US,en;q=0.9",
                "Cache-Control": "no-cache",
                "Referer": Path.BASE_URL,
