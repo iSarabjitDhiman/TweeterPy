@@ -27,11 +27,11 @@ def make_request(url, session=None, method=None, max_retries=None, timeout=None,
             api_limit_stats = util.check_api_rate_limits(response) or {}
             if api_limit_stats:
                 config._RATE_LIMIT_STATS = api_limit_stats
-            soup = bs4.BeautifulSoup(response.content, "lxml")
             if "json" in response.headers["Content-Type"]:
                 if skip_error_checking:
                     return response.json()
                 return util.check_for_errors(response.json())
+            soup = bs4.BeautifulSoup(response.content, "lxml")
             response_text = "\n".join(
                 [line.strip() for line in soup.text.split("\n") if line.strip()])
             response.raise_for_status()
