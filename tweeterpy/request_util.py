@@ -3,6 +3,8 @@ import requests
 import logging.config
 from tweeterpy import util
 from tweeterpy import config
+from urllib.parse import urlparse
+from tweeterpy.tid import ClientTransaction
 from requests.exceptions import ProxyError, InvalidProxyURL
 
 logging.config.dictConfig(config.LOGGING_CONFIG)
@@ -21,12 +23,18 @@ class RequestClient:
             max_retries = config.MAX_RETRIES or 3
         if timeout is None:
             timeout = config.TIMEOUT or 30
+        tid = None
         logger.debug(f"{locals()}")
+        headers = kwargs.pop("headers", {})
+        if isinstance(self.client_transaction, ClientTransaction):
+            tid = self.client_transaction.generate_transaction_id(
+                method=method, path=urlparse(url).path)
+            headers["X-Client-Transaction-Id"] = tid
         for retry_count, _ in enumerate(range(max_retries), start=1):
             response_text, api_limit_stats = "", {}
             try:
                 response = self.session.request(
-                    method, url, timeout=timeout, **kwargs)
+                    method, url, headers=headers, timeout=timeout, **kwargs)
                 api_limit_stats = util.check_api_rate_limits(response) or {}
                 if "json" in response.headers.get("Content-Type", ""):
                     response = response.json()

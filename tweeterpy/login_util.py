@@ -100,6 +100,8 @@ class TaskHandler:
         """
 
         # DYNAMIC WAY OF HANDLING LOG IN - BETTER
+        response = None
+        error_message = None
         tasks_pending = True
         verification_input_data = None
         try:
@@ -113,11 +115,13 @@ class TaskHandler:
                 if tasks:
                     task_id = tasks[0]
                 else:
-                    raise Exception(f"Couldn't find the following Task Ids:\n{response_tasks}")
+                    missing_task_ids_error = f"\nCouldn't find the following Task Ids:\n{response_tasks}" if response_tasks else ""
+                    login_error =  f"{(error_message or '')}{missing_task_ids_error}"
+                    raise Exception(login_error)
                 task = task_flow_mapper.get(task_id)
                 if task:
+                    error_message = "\n".join(find_nested_key(response,"text"))
                     if task_id == 'LoginAcid' or task_id == 'LoginEnterAlternateIdentifierSubtask':
-                        error_message = "\n".join(find_nested_key(response,"text"))
                         input_type = find_nested_key(response,"keyboard_type").strip()
                         input_message = find_nested_key(response,"hint_text") + f" (Input Type - {input_type}) ==> "
                         if error_message and input_type:

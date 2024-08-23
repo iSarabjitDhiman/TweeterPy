@@ -8,6 +8,7 @@ from functools import reduce
 from tweeterpy import util
 from tweeterpy import config
 from tweeterpy.api_util import ApiUpdater
+from tweeterpy.tid import ClientTransaction
 from tweeterpy.login_util import TaskHandler
 from tweeterpy.request_util import RequestClient
 from tweeterpy.logging_util import set_log_level
@@ -165,6 +166,8 @@ class TweeterPy:
             session.headers.update(util.generate_headers())
             # home_page = self.request_client.request(Path.BASE_URL)
             home_page = util.handle_x_migration(session=session)
+            self.request_client.client_transaction = ClientTransaction(
+                home_page_response=home_page)
             try:
                 response = self.request_client.request(
                     Path.GUEST_TOKEN_URL, method="POST")
