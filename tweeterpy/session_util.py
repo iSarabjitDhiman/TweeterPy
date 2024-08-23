@@ -1,8 +1,8 @@
+import os
 import pickle
 import requests
-import os
 import logging.config
-from . import config
+from tweeterpy import config
 
 logging.config.dictConfig(config.LOGGING_CONFIG)
 logger = logging.getLogger(__name__)
@@ -37,7 +37,8 @@ def save_session(filename=None, path=None, session=None):
     if session is None:
         raise NameError("name 'session' is not defined.")
     if not isinstance(session, requests.Session):
-        raise TypeError(f"Invalid session type. {session} is not a requests.Session Object...")
+        raise TypeError(
+            f"Invalid session type. {session} is not a requests.Session Object...")
     if filename is None:
         filename = str(
             input("Enter Username/Account Name to Save the Session : ")).strip()
@@ -54,7 +55,8 @@ def load_session(file_path=None, session=None):
     if session is None:
         raise NameError("name 'session' is not defined.")
     if not isinstance(session, requests.Session):
-        raise TypeError(f"Invalid session type. {session} is not a requests.Session Object...")
+        raise TypeError(
+            f"Invalid session type. {session} is not a requests.Session Object...")
     if file_path is None:
         file_path = _show_saved_sessions()
     with open(file_path, "rb") as file:

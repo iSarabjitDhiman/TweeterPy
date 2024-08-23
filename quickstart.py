@@ -4,8 +4,8 @@ from tweeterpy.util import find_nested_key
 
 
 def main():
-    #config.TIMEOUT = 5
-    #config.PROXY = {'http': 'proxy_here', 'https': 'proxy_here'}
+    # config.TIMEOUT = 5
+    # config.PROXY = {'http': 'proxy_here', 'https': 'proxy_here'}
     twitter = TweeterPy()
     print(twitter.get_user_id('elonmusk'))
     print(twitter.get_user_info('elonmusk'))

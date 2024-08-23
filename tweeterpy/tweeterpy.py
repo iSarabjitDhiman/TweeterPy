@@ -1,18 +1,18 @@
-import requests
 import json
 import random
 import getpass
+import requests
 import logging.config
 from functools import reduce
 
-from .api_util import ApiUpdater
-from .constants import Path, FeatureSwitch
-from .login_util import TaskHandler
-from .request_util import make_request
-from .session_util import load_session, save_session
-from .logging_util import set_log_level
-from . import util
-from . import config
+from tweeterpy import util
+from tweeterpy import config
+from tweeterpy.api_util import ApiUpdater
+from tweeterpy.login_util import TaskHandler
+from tweeterpy.request_util import make_request
+from tweeterpy.logging_util import set_log_level
+from tweeterpy.constants import Path, FeatureSwitch
+from tweeterpy.session_util import load_session, save_session
 
 logging.config.dictConfig(config.LOGGING_CONFIG)
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ class TweeterPy:
             ApiUpdater(update_api=config.UPDATE_API, session=self.__session)
         except Exception as error:
             logger.warn(error)
-        self.__session.headers.update({"Authorization":self.__token})
+        self.__session.headers.update({"Authorization": self.__token})
 
     def _generate_request_data(self, endpoint, variables=None, **kwargs):
         # fmt: off - Turns off formatting for this block of code. Just for the readability purpose.
@@ -45,7 +45,8 @@ class TweeterPy:
             features = FeatureSwitch().get_query_features(endpoint) or util.generate_features(**kwargs)
             query_params["features"] = json.dumps(features)
         # fmt: on   
-        request_payload = {"url": url, "params": query_params, "session":self.__session}
+        request_payload = {"url": url,
+                           "params": query_params, "session": self.__session}
         logger.debug(f"Request Payload => {request_payload}")
         return request_payload
 
@@ -165,7 +166,8 @@ class TweeterPy:
                     Path.GUEST_TOKEN_URL, method="POST", session=session)
                 if not response.get('guest_token'):
                     logger.debug(response)
-                guest_token = response.get('guest_token', util.find_guest_token(home_page))
+                guest_token = response.get(
+                    'guest_token', util.find_guest_token(home_page))
             except Exception as error:
                 logger.error(error)
                 raise
@@ -384,7 +386,8 @@ class TweeterPy:
             dict: Tweet data.
         """
         if end_cursor is not None and not with_tweet_replies:
-            logger.exception("Either set with_tweet_replies to True or end_cursor to None.")
+            logger.exception(
+                "Either set with_tweet_replies to True or end_cursor to None.")
             raise
         referer = 'tweet' if with_tweet_replies else random.choice(
             ['profile', 'home'])
@@ -529,7 +532,8 @@ class TweeterPy:
             dict: Returns data, cursor_endpoint, has_next_page
         """
         if (not follower and not following and not mutual_follower) or (follower and following and mutual_follower):
-            logger.exception("Set one of the (follower,following,mutual_follower) to True.")
+            logger.exception(
+                "Set one of the (follower,following,mutual_follower) to True.")
             raise
         user_id = self.get_user_id(user_id)
         query_path = Path.FOLLOWERS_ENDPOINT if follower else Path.FOLLOWINGS_ENDPOINT if following else Path.MUTUAL_FOLLOWERS_ENDPOINT if mutual_follower else None
@@ -597,7 +601,7 @@ class TweeterPy:
             Path.RETWEETED_BY_ENDPOINT, variables, additional_features=True)
         data_path = ('data', 'retweeters_timeline', 'timeline', 'instructions')
         return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total, pagination=pagination)
-    
+
     def get_user_highlights(self, user_id, end_cursor=None, total=None, pagination=True):
         """Get highlights from a user's profile.
 
@@ -615,7 +619,8 @@ class TweeterPy:
                      "includePromotedContent": True, "withVoice": True}
         request_payload = self._generate_request_data(
             Path.USER_HIGHLIGHTS_ENDPOINT, variables, additional_features=True)
-        data_path = ('data', 'user', 'result', 'timeline', 'timeline', 'instructions')
+        data_path = ('data', 'user', 'result', 'timeline',
+                     'timeline', 'instructions')
         return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total, pagination=pagination)
 
 

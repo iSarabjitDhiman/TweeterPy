@@ -1,8 +1,8 @@
-import requests
 import bs4
+import requests
 import logging.config
-from . import util
-from . import config
+from tweeterpy import util
+from tweeterpy import config
 
 logging.config.dictConfig(config.LOGGING_CONFIG)
 logger = logging.getLogger(__name__)
@@ -12,7 +12,8 @@ def make_request(url, session=None, method=None, max_retries=None, timeout=None,
     if session is None:
         raise NameError("name 'session' is not defined.")
     if not isinstance(session, requests.Session):
-        raise TypeError(f"Invalid session type. {session} is not a requests.Session Object...")
+        raise TypeError(
+            f"Invalid session type. {session} is not a requests.Session Object...")
     if method is None:
         method = "GET"
     if max_retries is None:

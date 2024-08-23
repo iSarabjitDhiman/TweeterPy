@@ -1,6 +1,6 @@
 import logging
-from .constants import Color
-from . import config
+from tweeterpy import config
+from tweeterpy.constants import Color
 
 
 class CustomFormatter(logging.Formatter):

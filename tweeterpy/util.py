@@ -1,13 +1,13 @@
 import re
-import datetime
-import time
 import bs4
+import time
+import datetime
 import logging.config
 from functools import reduce
-from urllib.parse import urljoin
 from typing import Dict, List
-from .constants import Path, PUBLIC_TOKEN
-from . import config
+from urllib.parse import urljoin
+from tweeterpy import config
+from tweeterpy.constants import Path, PUBLIC_TOKEN
 from dataclasses import dataclass, field, fields, asdict, _MISSING_TYPE
 
 logging.config.dictConfig(config.LOGGING_CONFIG)
@@ -60,17 +60,17 @@ def generate_features(default_features=True, user_data_features=False, user_info
         features.update(default_features)
 
     if user_data_features or user_info_feautres:
-        features.update({"hidden_profile_likes_enabled": False, "hidden_profile_subscriptions_enabled":True, "highlights_tweets_tab_ui_enabled": True,
-                         "responsive_web_twitter_article_notes_tab_enabled":False, "creator_subscriptions_tweet_preview_api_enabled": True})
+        features.update({"hidden_profile_likes_enabled": False, "hidden_profile_subscriptions_enabled": True, "highlights_tweets_tab_ui_enabled": True,
+                         "responsive_web_twitter_article_notes_tab_enabled": False, "creator_subscriptions_tweet_preview_api_enabled": True})
         if user_info_feautres:
             features.update(
-                {"subscriptions_verification_info_is_identity_verified_enabled":True, "subscriptions_verification_info_verified_since_enabled": True})
+                {"subscriptions_verification_info_is_identity_verified_enabled": True, "subscriptions_verification_info_verified_since_enabled": True})
 
     if additional_features:
-        features.update({"rweb_lists_timeline_redesign_enabled": True, "creator_subscriptions_tweet_preview_api_enabled": True, "c9s_tweet_anatomy_moderator_badge_enabled":True,"tweetypie_unmention_optimization_enabled": True,
+        features.update({"rweb_lists_timeline_redesign_enabled": True, "creator_subscriptions_tweet_preview_api_enabled": True, "c9s_tweet_anatomy_moderator_badge_enabled": True, "tweetypie_unmention_optimization_enabled": True,
                          "responsive_web_edit_tweet_api_enabled": True, "graphql_is_translatable_rweb_tweet_is_translatable_enabled": True, "view_counts_everywhere_api_enabled": True,
                          "longform_notetweets_consumption_enabled": True, "responsive_web_twitter_article_tweet_consumption_enabled": False, "tweet_awards_web_tipping_enabled": False,
-                         "freedom_of_speech_not_reach_fetch_enabled": True, "standardized_nudges_misinfo": True, "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled": False, "rweb_video_timestamps_enabled":True,
+                         "freedom_of_speech_not_reach_fetch_enabled": True, "standardized_nudges_misinfo": True, "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled": False, "rweb_video_timestamps_enabled": True,
                          "longform_notetweets_rich_text_read_enabled": True, "longform_notetweets_inline_media_enabled": False, "responsive_web_media_download_video_enabled": False, "responsive_web_enhance_cards_enabled": False})
 
     return features
@@ -83,10 +83,11 @@ def generate_url(domain=None, url_path=None):
         domain = Path.API_URL
     return urljoin(domain, url_path)
 
+
 def find_guest_token(page_source):
-    guest_token_regex = re.compile(r"""gt=(\d+);""",re.VERBOSE)
+    guest_token_regex = re.compile(r"""gt=(\d+);""", re.VERBOSE)
     try:
-        guest_token_match = re.search(guest_token_regex,str(page_source))
+        guest_token_match = re.search(guest_token_regex, str(page_source))
         if not guest_token_match:
             raise Exception("Couldn't find guest token")
         guest_token = guest_token_match.group(1)
@@ -95,29 +96,37 @@ def find_guest_token(page_source):
         logger.error(error)
         raise
 
+
 def handle_x_migration(session):
     home_page = None
-    migration_redirection_regex = re.compile(r"""(http(?:s)?://(?:www\.)?(twitter|x){1}\.com(/x)?/migrate([/?])?tok=[a-zA-Z0-9%\-_]+)+""", re.VERBOSE)
+    migration_redirection_regex = re.compile(
+        r"""(http(?:s)?://(?:www\.)?(twitter|x){1}\.com(/x)?/migrate([/?])?tok=[a-zA-Z0-9%\-_]+)+""", re.VERBOSE)
     try:
         response = session.request(method="GET", url=Path.BASE_URL)
         home_page = bs4.BeautifulSoup(response.content, 'lxml')
         migration_url = home_page.select_one("meta[http-equiv='refresh']")
-        migration_redirection_url = re.search(migration_redirection_regex, str(migration_url)) or re.search(migration_redirection_regex, str(response.content))
+        migration_redirection_url = re.search(migration_redirection_regex, str(
+            migration_url)) or re.search(migration_redirection_regex, str(response.content))
         if migration_redirection_url:
-            response = session.request(method="GET", url=migration_redirection_url.group(0))
+            response = session.request(
+                method="GET", url=migration_redirection_url.group(0))
             home_page = bs4.BeautifulSoup(response.content, 'lxml')
-        migration_form = home_page.select_one("form[name='f']") or home_page.select_one(f"form[action='{Path.X_MIGRATE_URL}']")
+        migration_form = home_page.select_one("form[name='f']") or home_page.select_one(
+            f"form[action='{Path.X_MIGRATE_URL}']")
         if migration_form:
             url = migration_form.attrs.get("action", Path.X_MIGRATE_URL)
             method = migration_form.attrs.get("method", "POST")
-            request_payload = {input_field.get("name"):input_field.get("value") for input_field in migration_form.select("input")}
-            response = session.request(method=method, url=url, data=request_payload)
+            request_payload = {input_field.get("name"): input_field.get(
+                "value") for input_field in migration_form.select("input")}
+            response = session.request(
+                method=method, url=url, data=request_payload)
             home_page = bs4.BeautifulSoup(response.content, 'lxml')
     except Exception as error:
         logger.error(error)
     finally:
         generate_headers(session=session)
         return home_page
+
 
 def check_for_errors(response):
     if isinstance(response, dict) and "errors" in response.keys():
@@ -275,7 +284,8 @@ class User(_Item):
     withheld_in_countries: List[str] = field(default_factory=list)
 
     def __post_init__(self):
-        user_result = find_nested_key(self._dataset, ("user_results", "result"))
+        user_result = find_nested_key(
+            self._dataset, ("user_results", "result"))
         self._dataset = user_result or self._dataset
         custom_keys = {"urls": ("entities", "url", "urls"),
                        "description_urls": ("entities", "description", "urls")}
@@ -320,8 +330,10 @@ class Tweet(_Item):
 
     def __post_init__(self):
         is_status = find_nested_key(self._dataset, ("tweetResult", "result"))
-        legacy_path = ("tweetResult" if is_status else "tweet_results", "result", "legacy")
-        dataset_path = ("tweetResult" if is_status else "tweet_results", "result")
+        legacy_path = (
+            "tweetResult" if is_status else "tweet_results", "result", "legacy")
+        dataset_path = (
+            "tweetResult" if is_status else "tweet_results", "result")
         custom_keys = {"screen_name": ("core", "user_results", "result", "legacy", "screen_name"), "name": (
             "core", "user_results", "result", "legacy", "name")}
         self.load_data(direct_keys=['id_str', 'rest_id', 'source', 'is_translatable', 'possibly_sensitive', 'views', 'created_at'],

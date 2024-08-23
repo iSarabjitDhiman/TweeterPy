@@ -1,7 +1,7 @@
-from .constants import Path
-from .request_util import make_request
-from .util import find_nested_key
-from .logging_util import disable_logger
+from tweeterpy.constants import Path
+from tweeterpy.util import find_nested_key
+from tweeterpy.request_util import make_request
+from tweeterpy.logging_util import disable_logger
 
 
 class TaskHandler:

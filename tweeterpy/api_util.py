@@ -1,12 +1,12 @@
+import os
 import re
 import json
-import demjson3
-import os
 import tempfile
+import demjson3
 import logging.config
-from .constants import Path, FeatureSwitch, API_TMP_FILE
-from .request_util import make_request
-from . import config
+from tweeterpy import config
+from tweeterpy.request_util import make_request
+from tweeterpy.constants import Path, FeatureSwitch, API_TMP_FILE
 
 logging.config.dictConfig(config.LOGGING_CONFIG)
 logger = logging.getLogger(__name__)
