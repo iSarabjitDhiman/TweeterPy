@@ -9,7 +9,7 @@ from tweeterpy import util
 from tweeterpy import config
 from tweeterpy.api_util import ApiUpdater
 from tweeterpy.login_util import TaskHandler
-from tweeterpy.request_util import make_request
+from tweeterpy.request_util import RequestClient
 from tweeterpy.logging_util import set_log_level
 from tweeterpy.constants import Path, FeatureSwitch
 from tweeterpy.session_util import load_session, save_session
@@ -26,14 +26,16 @@ class TweeterPy:
             config.LOG_LEVEL = "ERROR" if config.DISABLE_LOGS else config.LOG_LEVEL
             disable_external_only = config.DISABLE_EXTERNAL_LOGS if not config.DISABLE_LOGS else False
             set_log_level(logging.ERROR, external_only=disable_external_only)
+        self.request_client: RequestClient = None
         self.generate_session()
         # update api endpoints
-        self.__token = self.__session.headers.pop("Authorization")
+        token = self.request_client.session.headers.pop("Authorization")
         try:
-            ApiUpdater(update_api=config.UPDATE_API, session=self.__session)
+            ApiUpdater(request_client=self.request_client,
+                       update_api=config.UPDATE_API)
         except Exception as error:
             logger.warn(error)
-        self.__session.headers.update({"Authorization": self.__token})
+        self.request_client.session.headers.update({"Authorization": token})
 
     def _generate_request_data(self, endpoint, variables=None, **kwargs):
         # fmt: off - Turns off formatting for this block of code. Just for the readability purpose.
@@ -45,8 +47,7 @@ class TweeterPy:
             features = FeatureSwitch().get_query_features(endpoint) or util.generate_features(**kwargs)
             query_params["features"] = json.dumps(features)
         # fmt: on   
-        request_payload = {"url": url,
-                           "params": query_params, "session": self.__session}
+        request_payload = {"url": url, "params": query_params}
         logger.debug(f"Request Payload => {request_payload}")
         return request_payload
 
@@ -66,14 +67,13 @@ class TweeterPy:
             logger.warn("Either enable the pagination or disable total number of results.")
             raise Exception("pagination cannot be disabled while the total number of results are specified.")
         data_container = {"data": [],"cursor_endpoint": None, "has_next_page": True, "api_rate_limit":config._RATE_LIMIT_STATS}
-        session = kwargs.get("session", self.__session)
         while data_container["has_next_page"]:
             try:
                 if end_cursor:
                     variables = json.loads(params['variables'])
                     variables['cursor'] = end_cursor
                     params['variables'] = json.dumps(variables)
-                response = make_request(url, params=params, session=session)
+                response = self.request_client.request(url, params=params)
                 data = [item for item in reduce(
                     dict.get, data_path, response) if item['type'] == 'TimelineAddEntries'][0]['entries']
                 top_cursor = [
@@ -109,11 +109,14 @@ class TweeterPy:
 
     @property
     def session(self):
-        return self.__session
+        if isinstance(self.request_client, RequestClient):
+            return self.request_client.session
 
     @session.setter
     def session(self, session):
-        self.__session = session
+        if not isinstance(session, requests.Session):
+            raise Exception("invalid session")
+        self.request_client = RequestClient(session=session)
 
     @property
     def me(self):
@@ -127,7 +130,7 @@ class TweeterPy:
         request_payload = self._generate_request_data(
             Path.VIEWER_ENDPOINT, variables, user_data_features=True)
         try:
-            response = make_request(**request_payload)
+            response = self.request_client.request(**request_payload)
             if not isinstance(response, dict):
                 raise Exception(response)
             return response
@@ -154,16 +157,17 @@ class TweeterPy:
         """
         try:
             logger.debug("Trying to generate a new session.")
-            session = requests.Session()
+            self.request_client = RequestClient(session=requests.Session())
+            session = self.request_client.session
             if config.PROXY is not None:
                 session.proxies = config.PROXY
                 session.verify = False
             session.headers.update(util.generate_headers())
-            # home_page = make_request(Path.BASE_URL, session=session)
+            # home_page = self.request_client.request(Path.BASE_URL)
             home_page = util.handle_x_migration(session=session)
             try:
-                response = make_request(
-                    Path.GUEST_TOKEN_URL, method="POST", session=session)
+                response = self.request_client.request(
+                    Path.GUEST_TOKEN_URL, method="POST")
                 if not response.get('guest_token'):
                     logger.debug(response)
                 guest_token = response.get(
@@ -180,8 +184,7 @@ class TweeterPy:
             logger.exception(f"Couldn't generate a new session.\n{error}\n")
             raise
         logger.debug("Session has been generated.")
-        self.__session = session
-        return self.__session
+        return self.session
 
     def save_session(self, session=None, session_name=None):
         """Save a logged in session to avoid frequent logins in future.
@@ -194,7 +197,7 @@ class TweeterPy:
             path: Saved session file path.
         """
         if session is None:
-            session = self.__session
+            session = self.request_client.session
         if session_name is None:
             session_name = self.me['data']['viewer']['user_results']['result']['legacy']['screen_name']
         return save_session(filename=session_name, session=session)
@@ -211,9 +214,9 @@ class TweeterPy:
         """
         if session is None:
             session = self.generate_session()
-        self.__session = load_session(
-            file_path=session_file_path, session=session)
-        return self.__session
+        self.request_client = RequestClient(session=load_session(
+            file_path=session_file_path, session=session))
+        return self.session
 
     def logged_in(self):
         """Check if the user is logged in.
@@ -221,7 +224,7 @@ class TweeterPy:
         Returns:
             bool: Returns True if the user is logged in.
         """
-        if "auth_token" in self.__session.cookies.keys():
+        if "auth_token" in self.request_client.session.cookies.keys():
             # logger.info('User is authenticated.')
             return True
         return False
@@ -233,14 +236,14 @@ class TweeterPy:
             username (str, optional): Twitter username or email. Defaults to None.
             password (str, optional): Password. Defaults to None.
         """
-        if "auth_token" in self.__session.cookies.keys():
-            self.generate_session()
+        self.generate_session()
         if username is None:
             username = str(input("Enter Your Username or Email : ")).strip()
         if password is None:
             password = getpass.getpass()
-        TaskHandler(session=self.__session).login(username, password)
-        util.generate_headers(session=self.__session)
+        TaskHandler(request_client=self.request_client).login(
+            username, password)
+        util.generate_headers(session=self.request_client.session)
         try:
             user = self.me
             username = util.find_nested_key(user, 'screen_name')
@@ -268,7 +271,7 @@ class TweeterPy:
             return self.get_user_data(username).get('rest_id')
         request_payload = self._generate_request_data(
             Path.USER_ID_ENDPOINT, {"screen_name": username})
-        response = make_request(**request_payload)
+        response = self.request_client.request(**request_payload)
         return response['data']['user_result_by_screen_name']['result']['rest_id']
 
     @login_decorator
@@ -285,7 +288,7 @@ class TweeterPy:
         variables = {"userId": user_id, "withSafetyModeUserFields": True}
         request_payload = self._generate_request_data(
             Path.USER_INFO_ENDPOINT, variables, user_data_features=True)
-        response = make_request(**request_payload)
+        response = self.request_client.request(**request_payload)
         return response['data']['user']['result']
 
     def get_user_data(self, username):
@@ -300,7 +303,7 @@ class TweeterPy:
         variables = {"screen_name": username, "withSafetyModeUserFields": True}
         request_payload = self._generate_request_data(
             Path.USER_DATA_ENDPOINT, variables, user_info_feautres=True)
-        response = make_request(**request_payload)
+        response = self.request_client.request(**request_payload)
         return response['data']['user']['result']
 
     @login_decorator
@@ -316,7 +319,7 @@ class TweeterPy:
         variables = {"userIds": user_ids}
         request_payload = self._generate_request_data(
             Path.MULTIPLE_USERS_DATA_ENDPOINT, variables, default_features=True)
-        response = make_request(**request_payload)
+        response = self.request_client.request(**request_payload)
         return response['data']['users']
 
     def get_user_tweets(self, user_id, with_replies=False, end_cursor=None, total=None, pagination=True):
@@ -407,7 +410,7 @@ class TweeterPy:
             data_path = (
                 'data', 'threaded_conversation_with_injections_v2', 'instructions')
             return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total, pagination=pagination)
-        return make_request(**request_payload)
+        return self.request_client.request(**request_payload)
 
     @login_decorator
     def get_liked_tweets(self, user_id, end_cursor=None, total=None, pagination=True):
@@ -559,7 +562,7 @@ class TweeterPy:
         variables = {"rest_id": user_id}
         request_payload = self._generate_request_data(
             Path.PROFILE_CATEGORY_ENDPOINT, variables)
-        response = make_request(**request_payload)
+        response = self.request_client.request(**request_payload)
         return response
 
     @login_decorator

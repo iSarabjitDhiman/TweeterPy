@@ -5,7 +5,7 @@ import tempfile
 import demjson3
 import logging.config
 from tweeterpy import config
-from tweeterpy.request_util import make_request
+from tweeterpy.request_util import RequestClient
 from tweeterpy.constants import Path, FeatureSwitch, API_TMP_FILE
 
 logging.config.dictConfig(config.LOGGING_CONFIG)
@@ -24,8 +24,8 @@ class ApiUpdater:
         Twitter updates its API quite frequently. Therefore, ApiUpdater checks for the latest updates and modifies the api_endpoints, feature_switches, path etc in constants.py
     """
 
-    def __init__(self, update_api=True, session=None):
-        self.__session = session
+    def __init__(self, request_client: RequestClient = None, update_api: bool = True):
+        self.request_client = request_client
         try:
             logger.debug('Updating API...')
             # fmt: off - Turns off formatting for this block of code.
@@ -60,7 +60,7 @@ class ApiUpdater:
             # fmt: on 
 
     def _get_home_page_source(self):
-        return str(make_request(Path.BASE_URL, session=self.__session))
+        return str(self.request_client.request(Path.BASE_URL))
 
     def _get_api_file_url(self, page_source=None):
         if page_source is None:
@@ -89,12 +89,12 @@ class ApiUpdater:
     def _get_api_file_content(self, file_url=None):
         if file_url is None:
             file_url = self._get_api_file_url()
-        return str(make_request(file_url, session=self.__session))
+        return str(self.request_client.request(file_url))
 
     def _get_main_file_content(self, file_url=None):
         if file_url is None:
             file_url = self._get_main_file_url()
-        return str(make_request(file_url, session=self.__session))
+        return str(self.request_client.request(file_url))
 
     def _js_to_py_dict(sel, page_source):
         if isinstance(page_source, list):
