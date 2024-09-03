@@ -1,3 +1,4 @@
+import random
 from tweeterpy.constants import Path
 from tweeterpy.util import find_nested_key
 from tweeterpy.request_util import RequestClient
@@ -17,13 +18,15 @@ class TaskHandler:
                             "DenyLoginSubtask":{"task_executor": self._check_suspicious_login,"task_parameter":None},
                             "AccountDuplicationCheck":{"task_executor": self._check_account_duplication,"task_parameter":None},
                             "LoginAcid":{"task_executor":self._handle_suspicious_login,"task_parameter":verification_input_data},
+                            "LoginTwoFactorAuthChallenge":{"task_executor":self._handle_suspicious_login,"task_parameter":verification_input_data},
                             "LoginSuccessSubtask":{"task_output": "\nPlease Wait... Logging In...\n"}}
         return task_flow_mapper
 
     def _get_flow_token(self):
         params = {'flow_name': 'login'}
+        login_location = random.choice(['splash_screen', 'manual_link'])
         payload = {'input_flow_data': {
-            'flow_context': {'debug_overrides': {}, 'start_location': {'location': 'manual_link'}, }, },
+            'flow_context': {'debug_overrides': {}, 'start_location': {'location': login_location}, }, },
             'subtask_versions': {'action_list': 2, 'alert_dialog': 1, 'app_download_cta': 1, 'check_logged_in_account': 1,
                                  'choice_selection': 3, 'contacts_live_sync_permission_prompt': 0, 'cta': 7, 'email_verification': 2, 'end_flow': 1,
                                  'enter_date': 1, 'enter_email': 2, 'enter_password': 5, 'enter_phone': 2, 'enter_recaptcha': 1, 'enter_text': 5,
@@ -86,7 +89,7 @@ class TaskHandler:
         return response
 
     @disable_logger
-    def login(self, username, password):
+    def login(self, username, password, email=None, phone=None, **kwargs):
         # MANUAL WAY OF HANDLING LOG IN
         """
         initital_flow_token = self._get_flow_token()
@@ -105,7 +108,7 @@ class TaskHandler:
         tasks_pending = True
         verification_input_data = None
         try:
-            task_flow_mapper = self._create_task_mapper(username,password,verification_input_data)
+            task_flow_mapper = self._create_task_mapper(username or email, password, verification_input_data)
             response = self._get_flow_token()
             self._get_javscript_instrumentation_subtask()
             while tasks_pending:
@@ -116,17 +119,25 @@ class TaskHandler:
                     task_id = tasks[0]
                 else:
                     missing_task_ids_error = f"\nCouldn't find the following Task Ids:\n{response_tasks}" if response_tasks else ""
-                    login_error =  f"{(error_message or '')}{missing_task_ids_error}"
+                    login_error =  f"{(error_message or '')}{missing_task_ids_error}".strip()
                     raise Exception(login_error)
                 task = task_flow_mapper.get(task_id)
                 if task:
-                    error_message = "\n".join(find_nested_key(response,"text"))
-                    if task_id == 'LoginAcid' or task_id == 'LoginEnterAlternateIdentifierSubtask':
-                        input_type = find_nested_key(response,"keyboard_type").strip()
-                        input_message = find_nested_key(response,"hint_text") + f" (Input Type - {input_type}) ==> "
-                        if error_message and input_type:
+                    error_message = ("\n".join([ x for x in find_nested_key(response,"text") if x and isinstance(x, str)]) or "").strip()
+                    if task_id in ['LoginAcid', 'LoginEnterAlternateIdentifierSubtask', 'LoginTwoFactorAuthChallenge']:
+                        input_type = (find_nested_key(response,"keyboard_type") or "").strip().lower()
+                        hint_message = (find_nested_key(response,"hint_text") or "").strip().lower()
+                        input_message = f"{hint_message} (Input Type - {input_type}) ==> "
+                        otp_required = True if hint_message == "confirmation code" and input_type == "text" else False
+                        email_verification = True if input_type == "email" or (hint_message == "phone or email" and input_type == "text") else False
+                        phone_verification = True if hint_message == "phone number" and input_type == "telephone" else False
+                        identity_verification = True if hint_message == "phone or username" and input_type == "text" else False
+                        two_fac_auth = True if task_id == "LoginTwoFactorAuthChallenge" else False
+                        if input_type and hint_message and error_message:
                             print(f"\n{error_message}\n")
-                            verification_input_data = str(input(input_message))
+                            verification_input_data = phone if (phone_verification or identity_verification) and phone else email if email_verification and email else str(input(input_message)) if two_fac_auth or otp_required else None
+                            if not verification_input_data:
+                                raise Exception(error_message)
                             task_flow_mapper[task_id].update({"task_parameter":verification_input_data}) 
                     if task_id == 'LoginSuccessSubtask':
                         tasks_pending = False

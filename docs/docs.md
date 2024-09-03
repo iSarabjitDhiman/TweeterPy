@@ -35,7 +35,7 @@ twitter = TweeterPy()
 > # DON'T USE ALL THREE, JUST USE ANY ONE OF THE FOLLOWINGS.
 
 # twitter.generate_session(auth_token="auth_token_here") #-- Use Auth-Token to Login
-# twitter.login("username_here","password_here") #-- Use credentials to login.
+# twitter.login(username=username, password=password, email=email, phone=phone) #-- Use credentials to login.
 # twitter.load_session() #-- Load session from local storage if u previously saved some session with twitter.save_session()
 
 print(twitter.get_user_id('elonmusk'))
@@ -255,14 +255,16 @@ generate_session(auth_token=None)
 ## Log into an account
 
 ```python
-login(username=None, password=None)
+login(username=None, password=None, email=None, phone=None, **kwargs)
 
     """
         Log into an account.
 
         Args:
-            username (str, optional): Twitter username or email. Defaults to None.
+            username (str, optional): Twitter username. Defaults to None.
             password (str, optional): Password. Defaults to None.
+            email (str, optional): Twitter email. Defaults to None.
+            phone (str, optional): Twitter phone. Defaults to None.
     """
 ```
 
