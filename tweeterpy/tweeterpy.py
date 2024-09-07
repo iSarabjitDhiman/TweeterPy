@@ -76,7 +76,16 @@ class TweeterPy:
                     params['variables'] = json.dumps(variables)
                 response = self.request_client.request(url, params=params)
                 data = [item for item in reduce(
-                    dict.get, data_path, response) if item['type'] == 'TimelineAddEntries'][0]['entries']
+                    dict.get, data_path, response) if item['type'] == 'TimelineAddEntries' or item['type'] == 'TimelineReplaceEntry']
+                replace_entries=[en['entry'] for en in data if en['type']=='TimelineReplaceEntry']
+                data_elm=[]
+                if data :
+                    for data0 in data:
+                        if 'entries' in data0:
+                            data_elm.extend(data0['entries'])
+                data = data_elm
+                for replace_en in replace_entries:
+                    data.append(replace_en)
                 top_cursor = [
                     entry for entry in data if entry['entryId'].startswith('cursor-top')]
                 if top_cursor:
@@ -87,7 +96,10 @@ class TweeterPy:
                     end_cursor = reduce(dict.get, ('content','value'),end_cursor[0]) or reduce(dict.get, ('content','itemContent','value'),end_cursor[0])
                 data_container['data'].extend(filter_data(data))
                 if config._RATE_LIMIT_STATS:
-                    data_container['api_rate_limit'].update(config._RATE_LIMIT_STATS)
+                    if data_container['api_rate_limit']:
+                        data_container['api_rate_limit'].update(config._RATE_LIMIT_STATS)
+                    else:
+                        data_container['api_rate_limit'] = config._RATE_LIMIT_STATS
 
                 print(len(data_container['data']), end="\r")
 
