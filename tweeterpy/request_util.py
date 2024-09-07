@@ -60,7 +60,7 @@ class RequestClient:
                 logger.debug(f"Retry No. ==> {retry_count}")
                 if retry_count >= max_retries:
                     logger.exception(f"{error}\n{response_text}\n")
-                    if api_limit_stats.get('exhausted'):
+                    if api_limit_stats.get('rate_limit_exhausted'):
                         logger.error(
                             f"Rate Limit Exceeded => {api_limit_stats}")
                         raise util.RateLimitError('API Rate Limit Exceeded.')
