@@ -86,15 +86,11 @@ def generate_url(domain=None, url_path=None):
 
 def find_guest_token(page_source):
     guest_token_regex = re.compile(r"""gt=(\d+);""", re.VERBOSE)
-    try:
-        guest_token_match = re.search(guest_token_regex, str(page_source))
-        if not guest_token_match:
-            raise Exception("Couldn't find guest token")
-        guest_token = guest_token_match.group(1)
-        return guest_token
-    except Exception as error:
-        logger.error(error)
-        raise
+    guest_token_match = re.search(guest_token_regex, str(page_source))
+    if not guest_token_match:
+        raise Exception("Couldn't find guest token")
+    guest_token = guest_token_match.group(1)
+    return guest_token
 
 
 def handle_x_migration(session):
@@ -129,15 +125,17 @@ def handle_x_migration(session):
 
 
 def check_for_errors(response):
-    if isinstance(response, dict) and "errors" in response.keys():
-        if not response.get("data"):
-            error_message = "\n".join([error['message']
-                                       for error in response['errors']])
-            raise Exception(error_message)
-    # if "data" in response.keys():
-    #     if not response.get("data"):
-    #         raise Exception("Couldn't fetch data.")
-    # return response['flow_token'] # For manual Way - login_util
+    if not isinstance(response, dict):
+        return response
+    if "errors" in response and not response.get("data"):
+        error_message = "\n".join([error['message']
+                                  for error in response['errors']])
+        raise Exception(error_message)
+
+    if "code" in response and "message" in response:
+        raise Exception(
+            f"Error code {response.get('code')} - {response.get('message')}")
+
     return response
 
 
