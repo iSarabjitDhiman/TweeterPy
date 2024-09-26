@@ -80,7 +80,7 @@ class TweeterPy:
         if not pagination and total:
             logger.warn("Either enable the pagination or disable total number of results.")
             raise Exception("pagination cannot be disabled while the total number of results are specified.")
-        data_container = {"data": [],"cursor_endpoint": None, "has_next_page": True, "api_rate_limit":None}
+        data_container = {"data": [],"cursor_endpoint": None, "has_next_page": True, "api_rate_limit": None}
         while data_container["has_next_page"]:
             try:
                 if end_cursor:
@@ -88,6 +88,7 @@ class TweeterPy:
                     variables['cursor'] = end_cursor
                     params['variables'] = json.dumps(variables)
                 response = self.request_client.request(url, params=params)
+                data_container['api_rate_limit'] = response.get("api_rate_limit")
                 data = [item for item in reduce(
                     dict.get, data_path, response) if item['type'] == 'TimelineAddEntries'][0]['entries']
                 top_cursor = [
@@ -99,8 +100,6 @@ class TweeterPy:
                 if end_cursor:
                     end_cursor = reduce(dict.get, ('content','value'),end_cursor[0]) or reduce(dict.get, ('content','itemContent','value'),end_cursor[0])
                 data_container['data'].extend(filter_data(data))
-
-                data_container['api_rate_limit'].update({})
 
                 print(len(data_container['data']), end="\r")
 
