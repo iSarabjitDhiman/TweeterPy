@@ -4,11 +4,10 @@ import json
 import tempfile
 import demjson3
 import logging.config
-from tweeterpy import config
 from tweeterpy.request_util import RequestClient
-from tweeterpy.constants import Path, FeatureSwitch, API_TMP_FILE
+from tweeterpy.constants import Path, FeatureSwitch, API_TMP_FILE, LOGGING_CONFIG
 
-logging.config.dictConfig(config.LOGGING_CONFIG)
+logging.config.dictConfig(LOGGING_CONFIG)
 logger = logging.getLogger(__name__)
 
 dataset_regex = re.compile(r'''exports\s*=\s*{(.*?)},''', re.VERBOSE)

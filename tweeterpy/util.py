@@ -6,11 +6,10 @@ import logging.config
 from functools import reduce
 from typing import Dict, List
 from urllib.parse import urljoin
-from tweeterpy import config
-from tweeterpy.constants import Path, PUBLIC_TOKEN
+from tweeterpy.constants import Path, PUBLIC_TOKEN, LOGGING_CONFIG, USER_AGENT
 from dataclasses import dataclass, field, fields, asdict, _MISSING_TYPE
 
-logging.config.dictConfig(config.LOGGING_CONFIG)
+logging.config.dictConfig(LOGGING_CONFIG)
 logger = logging.getLogger(__name__)
 
 
@@ -33,7 +32,7 @@ def generate_headers(session=None, custom_headers=None):
                "Accept-Language": "en-US,en;q=0.9",
                "Cache-Control": "no-cache",
                "Referer": Path.BASE_URL,
-               "User-Agent": config._USER_AGENT,
+               "User-Agent": USER_AGENT,
                "X-Twitter-Active-User": "yes",
                "X-Twitter-Client-Language": "en"
                }

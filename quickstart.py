@@ -1,12 +1,11 @@
 from tweeterpy import TweeterPy
-from tweeterpy import config
 from tweeterpy.util import find_nested_key
 
 
 def main():
-    # config.TIMEOUT = 5
-    # config.PROXY = {'http': 'proxy_here', 'https': 'proxy_here'}
-    twitter = TweeterPy()
+    # proxy = {'http': 'proxy_here', 'https': 'proxy_here'}
+    proxy = None
+    twitter = TweeterPy(proxies=proxy, log_level="INFO")
     print(twitter.get_user_id('elonmusk'))
     print(twitter.get_user_info('elonmusk'))
     # print(twitter.get_user_data('elonmusk'))

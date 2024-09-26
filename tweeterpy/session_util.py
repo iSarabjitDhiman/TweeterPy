@@ -2,15 +2,15 @@ import os
 import pickle
 import requests
 import logging.config
-from tweeterpy import config
+from tweeterpy.constants import DEFAULT_SESSION_DIRECTORY, LOGGING_CONFIG
 
-logging.config.dictConfig(config.LOGGING_CONFIG)
+logging.config.dictConfig(LOGGING_CONFIG)
 logger = logging.getLogger(__name__)
 
 
 def _create_session_directory(directory_path=None):
     if directory_path is None:
-        directory_path = config.SESSION_DIRECTORY or os.getcwd()
+        directory_path = DEFAULT_SESSION_DIRECTORY
 
     directory_path = os.path.realpath(os.path.expanduser(directory_path))
     os.makedirs(directory_path, exist_ok=True)
@@ -51,15 +51,15 @@ def save_session(filename=None, path=None, session=None):
     return file_path
 
 
-def load_session(file_path=None, session=None):
+def load_session(path=None, session=None):
     if session is None:
         raise NameError("name 'session' is not defined.")
     if not isinstance(session, requests.Session):
         raise TypeError(
             f"Invalid session type. {session} is not a requests.Session Object...")
-    if file_path is None:
-        file_path = _show_saved_sessions()
-    with open(file_path, "rb") as file:
+    if path is None:
+        path = _show_saved_sessions()
+    with open(path, "rb") as file:
         headers, cookies = pickle.load(file)
     session.headers = headers
     session.cookies = cookies

@@ -4,8 +4,61 @@ logger = logging.getLogger(__name__)
 
 PUBLIC_TOKEN = 'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA'
 
+USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36'
+
 # Filename to store api data/endpoints as a backup.
 API_TMP_FILE = "tweeterpy_api.json"
+
+# Directory path/name to save and load logged in sessions/cookies. Default path is current directory. i.e. current_path/Twitter Saved Sessions
+DEFAULT_SESSION_DIRECTORY = "Twitter Saved Sessions"
+
+# File name to save logs.
+LOG_FILE_NAME = "tweeterpy.log"
+
+# Logging level : "DEBUG","INFO","WARNING","ERROR","CRITICAL"
+# If None, "INFO" will be used for Stream/Console logs and "DEBUG" will be used for file logs.
+# LOG_LEVEL = "INFO"
+LOG_LEVEL = "INFO"
+
+# Log Configuration.
+LOGGING_CONFIG = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'standard': {
+            'format': '%(asctime)s [%(levelname)s] [Line No. %(lineno)d] %(name)s : %(funcName)s :: %(message)s'
+        },
+        'custom': {
+            # 'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+            'class': 'tweeterpy.logging_util.CustomFormatter',
+        }
+    },
+    'handlers': {
+        'stream': {
+            'level': LOG_LEVEL,
+            'formatter': 'custom',
+            'class': 'logging.StreamHandler',
+            'stream': 'ext://sys.stdout'
+        },
+        'file': {
+            'level': 'DEBUG',
+            'formatter': 'standard',
+            'class': 'logging.FileHandler',
+            'filename': LOG_FILE_NAME,
+            "encoding": "utf-8"
+        }
+    },
+    'loggers': {
+        '': {  # root logger
+            'handlers': ['stream', 'file'],
+            'level': 'DEBUG'
+        },
+        '__main__': {  # if __name__ == '__main__'
+            'handlers': ['stream', 'file'],
+            'level': 'DEBUG',
+        }
+    }
+}
 
 
 class Color:

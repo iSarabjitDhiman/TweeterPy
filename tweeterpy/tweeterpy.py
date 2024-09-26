@@ -4,36 +4,41 @@ import getpass
 import requests
 import logging.config
 from functools import reduce
+from typing import Union, Dict
 
 from tweeterpy import util
-from tweeterpy import config
 from tweeterpy.api_util import ApiUpdater
 from tweeterpy.tid import ClientTransaction
 from tweeterpy.login_util import TaskHandler
 from tweeterpy.request_util import RequestClient
 from tweeterpy.logging_util import set_log_level
-from tweeterpy.constants import Path, FeatureSwitch
 from tweeterpy.session_util import load_session, save_session
+from tweeterpy.constants import Path, FeatureSwitch, LOGGING_CONFIG
 
-logging.config.dictConfig(config.LOGGING_CONFIG)
+logging.config.dictConfig(LOGGING_CONFIG)
 logger = logging.getLogger(__name__)
 
 
 class TweeterPy:
 
-    def __init__(self):
-        if config.DISABLE_LOGS or config.DISABLE_EXTERNAL_LOGS:
-            logger.debug("Disabling logs...")
-            config.LOG_LEVEL = "ERROR" if config.DISABLE_LOGS else config.LOG_LEVEL
-            disable_external_only = config.DISABLE_EXTERNAL_LOGS if not config.DISABLE_LOGS else False
-            set_log_level(logging.ERROR, external_only=disable_external_only)
+    def __init__(self, proxies: Dict[str, str] = None, log_level: Union[str, int] = None):
+        """TweeterPy constructor
+
+        Args:
+            proxies (dict, optional): Proxies to use. Format {"http":"proxy_here","https":"proxy_here"}. Defaults to None.
+            log_level (str, optional): Logging level : "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL". Defaults to None.
+        """
+        set_log_level(log_level, external_only=False)
+
+        if proxies and isinstance(proxies, str):
+            proxies = {'http': proxies, 'https': proxies}
+        self.proxies = proxies
         self.request_client: RequestClient = None
         self.generate_session()
         # update api endpoints
         token = self.request_client.session.headers.pop("Authorization")
         try:
-            ApiUpdater(request_client=self.request_client,
-                       update_api=config.UPDATE_API)
+            ApiUpdater(request_client=self.request_client, update_api=True)
         except Exception as error:
             logger.warn(error)
         self.request_client.session.headers.update({"Authorization": token})
@@ -67,7 +72,7 @@ class TweeterPy:
         if not pagination and total:
             logger.warn("Either enable the pagination or disable total number of results.")
             raise Exception("pagination cannot be disabled while the total number of results are specified.")
-        data_container = {"data": [],"cursor_endpoint": None, "has_next_page": True, "api_rate_limit":config._RATE_LIMIT_STATS}
+        data_container = {"data": [],"cursor_endpoint": None, "has_next_page": True, "api_rate_limit":None}
         while data_container["has_next_page"]:
             try:
                 if end_cursor:
@@ -86,8 +91,8 @@ class TweeterPy:
                 if end_cursor:
                     end_cursor = reduce(dict.get, ('content','value'),end_cursor[0]) or reduce(dict.get, ('content','itemContent','value'),end_cursor[0])
                 data_container['data'].extend(filter_data(data))
-                if config._RATE_LIMIT_STATS:
-                    data_container['api_rate_limit'].update(config._RATE_LIMIT_STATS)
+
+                data_container['api_rate_limit'].update({})
 
                 print(len(data_container['data']), end="\r")
 
@@ -160,8 +165,8 @@ class TweeterPy:
             logger.debug("Trying to generate a new session.")
             self.request_client = RequestClient(session=requests.Session())
             session = self.request_client.session
-            if config.PROXY is not None:
-                session.proxies = config.PROXY
+            if self.proxies:
+                session.proxies = self.proxies
                 session.verify = False
             session.headers.update(util.generate_headers())
             # home_page = self.request_client.request(Path.BASE_URL)
@@ -189,12 +194,13 @@ class TweeterPy:
         logger.debug("Session has been generated.")
         return self.session
 
-    def save_session(self, session=None, session_name=None):
+    def save_session(self, session=None, session_name=None, path=None):
         """Save a logged in session to avoid frequent logins in future.
 
         Args:
             session (requests.Session, optional): requests.Session object you want to save. If None, saves current session by default. Defaults to None. 
             session_name (str, optional): Session name. If None, uses currently logged in username. Defaults to None.
+            path (str, optional): Session directory. If None, uses DEFAULT_SESSION_DIRECTORY from constants.py. Defaults to None.
 
         Returns:
             path: Saved session file path.
@@ -203,22 +209,20 @@ class TweeterPy:
             session = self.request_client.session
         if session_name is None:
             session_name = self.me['data']['viewer']['user_results']['result']['legacy']['screen_name']
-        return save_session(filename=session_name, session=session)
+        return save_session(filename=session_name, path=path, session=session)
 
-    def load_session(self, session_file_path=None, session=None):
+    def load_session(self, path=None):
         """Load a saved session.
 
         Args:
-            session_file_path (path, optional): File path to load session from. If None, shows a list of all saved session to choose from. Defaults to None.
-            session (request.Session, optional): requests.Session object to load a saved session into. Defaults to None.
+            path (str, optional): Session file path. If None, shows a list of all saved session to choose from. Defaults to None.
 
         Returns:
             requests.Session: Restored session.
         """
-        if session is None:
-            session = self.generate_session()
-        self.request_client = RequestClient(session=load_session(
-            file_path=session_file_path, session=session))
+        session = self.generate_session()
+        self.request_client = RequestClient(
+            session=load_session(path=path, session=session))
         return self.session
 
     def logged_in(self):

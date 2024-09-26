@@ -32,8 +32,9 @@ OR
 
 ```python
 from twitter import TweeterPy
-
-TweeterPy()
+# proxy = {'http': 'proxy_here', 'https': 'proxy_here'}
+proxy = None
+TweeterPy(proxies=proxy, log_level="INFO")
 ```
 
 > ### Example - Get User ID of a User.
@@ -52,23 +53,6 @@ print(twitter.get_user_id('elonmusk'))
 Check out step by step guide.
 
 [Documentation](docs/docs.md)
-
-## Configuration
-
-> ### Example - Config Usage
-
-```python
-from tweeterpy import config
-
-config.PROXY = {"http":"127.0.0.1","https":"127.0.0.1"}
-config.TIMEOUT = 10
-config.UPDATE_API = False
-
-```
-
-Check out configuration docs for the available settings.
-
-[Configurations](docs/config.md)
 
 ## Features
 

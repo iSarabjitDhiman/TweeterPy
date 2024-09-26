@@ -1,5 +1,4 @@
 import logging
-from tweeterpy import config
 from tweeterpy.constants import Color
 
 
@@ -23,6 +22,8 @@ class CustomFormatter(logging.Formatter):
 
 
 def set_log_level(log_level=None, return_loggers=False, external_only=False):
+    if log_level and log_level not in logging._levelToName and log_level not in logging._levelToName.values():
+        raise Exception("Invalid Log Level")
     if log_level is None:
         log_level = logging.ERROR
     all_loggers = {}
@@ -44,9 +45,8 @@ def disable_logger(original_function):
         except Exception as error:
             raise error
         finally:
-            if not config.DISABLE_LOGS:
-                [logging.getLogger(current_logger).setLevel(all_loggers.get(
-                    current_logger)) for current_logger in logging.root.manager.loggerDict.keys() if current_logger in list(all_loggers.keys())]
+            [logging.getLogger(current_logger).setLevel(all_loggers.get(current_logger))
+             for current_logger in logging.root.manager.loggerDict.keys() if current_logger in list(all_loggers.keys())]
         return returned_output
     return wrapper
 
