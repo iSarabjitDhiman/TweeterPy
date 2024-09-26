@@ -23,13 +23,13 @@ class ApiUpdater:
         Twitter updates its API quite frequently. Therefore, ApiUpdater checks for the latest updates and modifies the api_endpoints, feature_switches, path etc in constants.py
     """
 
-    def __init__(self, request_client: RequestClient = None, update_api: bool = True):
+    def __init__(self, request_client: RequestClient = None, restore_cache: bool = False):
         self.request_client = request_client
         try:
             logger.debug('Updating API...')
             # fmt: off - Turns off formatting for this block of code.
             try:
-                if not update_api:
+                if restore_cache:
                     raise Exception("Skipping API Updates.")
                 api_files_data = []
                 page_source = self._get_home_page_source()

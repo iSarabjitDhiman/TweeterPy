@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = "2.0.0"
+VERSION = "2.0.1"
 SHORT_DESCRIPTION = "TweeterPy is a python library to extract data from Twitter. TweeterPy API lets you scrape data from a user's profile like username, userid, bio, followers/followings list, profile media, tweets, etc."
 
 with open("requirements.txt") as file:

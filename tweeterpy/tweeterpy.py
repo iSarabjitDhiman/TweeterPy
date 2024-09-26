@@ -35,10 +35,18 @@ class TweeterPy:
         self.proxies = proxies
         self.request_client: RequestClient = None
         self.generate_session()
+
         # update api endpoints
+        restore_cache = not util.update_required()
+        self.update_api(restore_cache=restore_cache)
+
+    def update_api(self, restore_cache=True):
+        if self.request_client is None:
+            self.generate_session()
         token = self.request_client.session.headers.pop("Authorization")
         try:
-            ApiUpdater(request_client=self.request_client, update_api=True)
+            ApiUpdater(request_client=self.request_client,
+                       restore_cache=restore_cache)
         except Exception as error:
             logger.warn(error)
         self.request_client.session.headers.update({"Authorization": token})

@@ -1,12 +1,14 @@
+import os
 import re
 import bs4
 import time
 import datetime
+import tempfile
 import logging.config
 from functools import reduce
 from typing import Dict, List
 from urllib.parse import urljoin
-from tweeterpy.constants import Path, PUBLIC_TOKEN, LOGGING_CONFIG, USER_AGENT
+from tweeterpy.constants import Path, PUBLIC_TOKEN, LOGGING_CONFIG, USER_AGENT, API_TMP_FILE
 from dataclasses import dataclass, field, fields, asdict, _MISSING_TYPE
 
 logging.config.dictConfig(LOGGING_CONFIG)
@@ -189,6 +191,21 @@ def find_nested_key(dataset=None, nested_key=None):
         return {key: get_nested_data(dataset, key, []) for key in nested_key}
 
     return [get_nested_data(data, nested_key, []) for data in dataset] if isinstance(dataset, list) else get_nested_data(dataset, nested_key, [])
+
+
+def update_required():
+    try:
+        current_time = datetime.datetime.now()
+        api_backup_file = os.path.join(tempfile.gettempdir(), API_TMP_FILE)
+        last_modified = os.path.getmtime(api_backup_file)
+        yesterday_time = current_time - datetime.timedelta(hours=24)
+        one_day_elapsed = yesterday_time.timestamp() > last_modified
+        if one_day_elapsed:
+            return True
+        return False
+    except Exception as error:
+        logger.warn(error)
+        return True
 
 
 @dataclass
