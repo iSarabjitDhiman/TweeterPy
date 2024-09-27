@@ -10,9 +10,9 @@ from tweeterpy import util
 from tweeterpy.api_util import ApiUpdater
 from tweeterpy.tid import ClientTransaction
 from tweeterpy.login_util import TaskHandler
-from tweeterpy.request_util import RequestClient
-from tweeterpy.logging_util import set_log_level
-from tweeterpy.session_util import load_session, save_session
+from tweeterpy.utils.request import RequestClient
+from tweeterpy.utils.logging import set_log_level
+from tweeterpy.utils.session import load_session, save_session
 from tweeterpy.constants import Path, FeatureSwitch, LOGGING_CONFIG
 
 logging.config.dictConfig(LOGGING_CONFIG)

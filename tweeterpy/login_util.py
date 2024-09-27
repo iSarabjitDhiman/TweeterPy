@@ -1,8 +1,8 @@
 import random
 from tweeterpy.constants import Path
 from tweeterpy.util import find_nested_key
-from tweeterpy.request_util import RequestClient
-from tweeterpy.logging_util import disable_logger
+from tweeterpy.utils.request import RequestClient
+from tweeterpy.utils.logging import disable_logger
 
 
 class TaskHandler:
@@ -90,19 +90,6 @@ class TaskHandler:
 
     @disable_logger
     def login(self, username, password, email=None, phone=None, **kwargs):
-        # MANUAL WAY OF HANDLING LOG IN
-        """
-        initital_flow_token = self._get_flow_token()
-        self._get_javscript_instrumentation_subtask()
-        user_flow_token = self._get_user_flow_token(initital_flow_token)
-        password_flow_token = self._get_password_flow_token(
-            user_flow_token, username=username)
-        account_duplication_flow_token = self._get_account_duplication_flow_token(
-            password_flow_token, password=password)
-        return self._check_account_duplication(account_duplication_flow_token)
-        """
-
-        # DYNAMIC WAY OF HANDLING LOG IN - BETTER
         response = None
         error_message = None
         tasks_pending = True

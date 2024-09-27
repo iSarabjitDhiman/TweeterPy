@@ -4,7 +4,7 @@ import json
 import tempfile
 import demjson3
 import logging.config
-from tweeterpy.request_util import RequestClient
+from tweeterpy.utils.request import RequestClient
 from tweeterpy.constants import Path, FeatureSwitch, API_TMP_FILE, LOGGING_CONFIG
 
 logging.config.dictConfig(LOGGING_CONFIG)
