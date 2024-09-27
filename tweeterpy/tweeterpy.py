@@ -7,9 +7,9 @@ from functools import reduce
 from typing import Union, Dict
 
 from tweeterpy import util
-from tweeterpy.api_util import ApiUpdater
+from tweeterpy.login import TaskHandler
+from tweeterpy.updater import ApiUpdater
 from tweeterpy.tid import ClientTransaction
-from tweeterpy.login_util import TaskHandler
 from tweeterpy.utils.request import RequestClient
 from tweeterpy.utils.logging import set_log_level
 from tweeterpy.utils.session import load_session, save_session
