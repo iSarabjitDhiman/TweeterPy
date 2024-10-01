@@ -1,4 +1,6 @@
 import random
+import datetime
+import pyotp
 from tweeterpy.constants import Path
 from tweeterpy.util import find_nested_key
 from tweeterpy.utils.request import RequestClient
@@ -89,11 +91,12 @@ class TaskHandler:
         return response
 
     @disable_logger
-    def login(self, username, password, email=None, phone=None, **kwargs):
+    def login(self, username, password, email=None, phone=None, mfa_secret=None, **kwargs):
         response = None
         error_message = None
         tasks_pending = True
         verification_input_data = None
+        otp_code = None
         try:
             task_flow_mapper = self._create_task_mapper(username or email, password, verification_input_data)
             response = self._get_flow_token()
@@ -119,13 +122,17 @@ class TaskHandler:
                         email_verification = True if input_type == "email" or (hint_message == "phone or email" and input_type == "text") else False
                         phone_verification = True if hint_message == "phone number" and input_type == "telephone" else False
                         identity_verification = True if hint_message == "phone or username" and input_type == "text" else False
-                        two_fac_auth = True if task_id == "LoginTwoFactorAuthChallenge" else False
+                        two_fac_auth = True if task_id == "LoginTwoFactorAuthChallenge" and input_type == "number" and hint_message == "enter code" else False
+                        if two_fac_auth and mfa_secret:
+                            totp = pyotp.TOTP(mfa_secret)
+                            grace_time = datetime.timedelta(seconds=2)
+                            otp_code = totp.at(datetime.datetime.now() + grace_time)
                         if input_type and hint_message and error_message:
                             print(f"\n{error_message}\n")
-                            verification_input_data = phone if (phone_verification or identity_verification) and phone else email if email_verification and email else str(input(input_message)) if two_fac_auth or otp_required else None
+                            verification_input_data = phone if (phone_verification or identity_verification) and phone else email if (email_verification and email) else otp_code if (two_fac_auth and otp_code) else str(input(input_message)) if two_fac_auth or otp_required else None
                             if not verification_input_data:
                                 raise Exception(error_message)
-                            task_flow_mapper[task_id].update({"task_parameter":verification_input_data}) 
+                            task_flow_mapper[task_id].update({"task_parameter":verification_input_data})
                     if task_id == 'LoginSuccessSubtask':
                         tasks_pending = False
                         print(task['task_output'])
@@ -140,3 +147,7 @@ class TaskHandler:
                     tasks_pending = False
         except Exception as error:
             raise error
+
+
+if __name__ == "__main__":
+    pass

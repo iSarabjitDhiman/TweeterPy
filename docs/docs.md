@@ -255,7 +255,7 @@ generate_session(auth_token=None)
 ## Log into an account
 
 ```python
-login(username=None, password=None, email=None, phone=None, **kwargs)
+login(username=None, password=None, email=None, phone=None, mfa_secret=None, **kwargs)
 
     """
         Log into an account.
@@ -265,6 +265,7 @@ login(username=None, password=None, email=None, phone=None, **kwargs)
             password (str, optional): Password. Defaults to None.
             email (str, optional): Twitter email. Defaults to None.
             phone (str, optional): Twitter phone. Defaults to None.
+            mfa_secret (str, optional): Twitter MFA Secret Token to generate TOTP code. Defaults to None.
     """
 ```
 

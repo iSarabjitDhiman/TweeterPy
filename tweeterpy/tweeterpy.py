@@ -243,7 +243,7 @@ class TweeterPy:
             return True
         return False
 
-    def login(self, username=None, password=None, email=None, phone=None, **kwargs):
+    def login(self, username=None, password=None, email=None, phone=None, mfa_secret=None, **kwargs):
         """Log into an account.
 
         Args:
@@ -251,6 +251,7 @@ class TweeterPy:
             password (str, optional): Password. Defaults to None.
             email (str, optional): Twitter email. Defaults to None.
             phone (str, optional): Twitter phone. Defaults to None.
+            mfa_secret (str, optional): Twitter MFA Secret Token to generate TOTP code. Defaults to None.
         """
         self.generate_session()
         if username is None:
@@ -258,7 +259,7 @@ class TweeterPy:
         if password is None:
             password = getpass.getpass()
         TaskHandler(request_client=self.request_client).login(
-            username, password, email=email, phone=phone, **kwargs)
+            username, password, email=email, phone=phone, mfa_secret=mfa_secret, **kwargs)
         util.generate_headers(session=self.request_client.session)
         try:
             user = self.me

@@ -1,4 +1,5 @@
 beautifulsoup4==4.12.2
 demjson3==3.0.6
 lxml==5.2.2
+pyotp==2.9.0
 requests==2.32.2
