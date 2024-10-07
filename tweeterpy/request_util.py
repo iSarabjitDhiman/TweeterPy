@@ -1,4 +1,5 @@
 import bs4
+import time
 import requests
 import logging.config
 from tweeterpy import util
@@ -49,6 +50,23 @@ class RequestClient:
                     [line.strip() for line in soup.text.split("\n") if line.strip()])
                 response.raise_for_status()
                 return soup
+            except requests.exceptions.HTTPError as http_err:
+                if http_err.response.status_code == 429:
+                    print(f"Response: {http_err.response.text}")
+                    # usually the rate limit is 7-8 mins and doesn't exceed 10
+                    # it is possible that the response tells us how long are we
+                    # rate limited but extracting it is error prone and may break
+                    # if the response is reformatted from the their end.
+                    # This should work for most people yet in future we may allow
+                    # the user to configure the timeout explicitly or supply a
+                    # callback method to extract timeout from response.
+                    print("Cooldown for 10 Minutes")
+                    print(f"going to sleep at {time.strftime("%H:%M:%S", time.localtime())}")
+                    time.sleep(600)
+                    print("Awake. Retrying...")
+                    continue
+                else:
+                    print(f"HTTP error occurred: {http_err}")
             except KeyboardInterrupt:
                 logger.warn("Keyboard Interruption...")
                 return
@@ -60,6 +78,8 @@ class RequestClient:
                 logger.debug(f"Retry No. ==> {retry_count}")
                 if retry_count >= max_retries:
                     logger.exception(f"{error}\n{response_text}\n")
+                    # these retries dont help us as we need to wait for some time
+                    # and all attempts are exhaused before the rate limit expires
                     if api_limit_stats.get('rate_limit_exhausted'):
                         logger.error(
                             f"Rate Limit Exceeded => {api_limit_stats}")
