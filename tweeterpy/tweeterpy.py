@@ -38,6 +38,12 @@ class TweeterPy:
             logger.warn(error)
         self.request_client.session.headers.update({"Authorization": token})
 
+    def _generate_v1_request_data(self, endpoint, params={}):
+        url = util.generate_url(domain=Path.API_V1_URL, url_path=endpoint)
+        request_payload = {"url": url, "params": params}
+        logger.debug(f"Request Payload => {request_payload}")
+        return request_payload
+
     def _generate_request_data(self, endpoint, variables=None, **kwargs):
         # fmt: off - Turns off formatting for this block of code. Just for the readability purpose.
         url = util.generate_url(domain=Path.API_URL, url_path=endpoint)
@@ -232,7 +238,7 @@ class TweeterPy:
             return True
         return False
 
-    def login(self, username=None, password=None, email=None, phone=None, **kwargs):
+    def login(self, username=None, password=None, email=None, phone=None, mfa_token=None, **kwargs):
         """Log into an account.
 
         Args:
@@ -240,6 +246,7 @@ class TweeterPy:
             password (str, optional): Password. Defaults to None.
             email (str, optional): Twitter email. Defaults to None.
             phone (str, optional): Twitter phone. Defaults to None.
+            mfa_token (str, optional): Twitter MFA/2FA manual code. Defaults to None.
         """
         self.generate_session()
         if username is None:
@@ -247,7 +254,7 @@ class TweeterPy:
         if password is None:
             password = getpass.getpass()
         TaskHandler(request_client=self.request_client).login(
-            username, password, email=email, phone=phone, **kwargs)
+            username, password, email=email, phone=phone, mfa_token=mfa_token, **kwargs)
         util.generate_headers(session=self.request_client.session)
         try:
             user = self.me
@@ -295,6 +302,22 @@ class TweeterPy:
             Path.USER_INFO_ENDPOINT, variables, user_data_features=True)
         response = self.request_client.request(**request_payload)
         return response['data']['user']['result']
+
+    @login_decorator
+    def get_user_emails_and_phone_numbers(self):
+        """Gets all emails and phone numbers associated with a users account.
+
+        Args:
+            None
+
+        Returns:
+            dict: User information.
+        """
+        params = {'include_pending_email': True}
+        request_payload = self._generate_v1_request_data(
+            Path.EMAIL_PHONE_INFO_ENDPOINT, params)
+        response = self.request_client.request(**request_payload)
+        return response
 
     def get_user_data(self, username):
         """Extracts user details as same as get_user_info method. Except this one returns info about blue tick verification badge as well.

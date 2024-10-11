@@ -41,6 +41,7 @@ class Path:
     DOMAIN = "x.com"
     BASE_URL = "https://x.com/"
     API_URL = "https://x.com/i/api/graphql/"
+    API_V1_URL = "https://x.com/i/api/1.1/"
     TASK_URL = "https://api.x.com/1.1/onboarding/task.json"
     GUEST_TOKEN_URL = "https://api.x.com/1.1/guest/activate.json"
     JAVSCRIPT_INSTRUMENTATION_URL = "https://twitter.com/i/js_inst"
@@ -71,6 +72,8 @@ class Path:
     TWEET_LIKES_ENDPOINT = "mpMee2WCjo7Nm4gRRHHnvA/Favoriters"
     RETWEETED_BY_ENDPOINT = "7Fwe5A6kE05QIybims116A/Retweeters"
     USER_HIGHLIGHTS_ENDPOINT = "w9-i9VNm_92GYFaiyGT1NA/UserHighlightsTweets"
+    # V1 ENDPOINTS
+    EMAIL_PHONE_INFO_ENDPOINT = "users/email_phone_info.json"
 
 
 class FeatureSwitch:

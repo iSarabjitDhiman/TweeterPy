@@ -1,6 +1,9 @@
 import re
 import bs4
 import time
+import base64
+import struct
+import hmac
 import datetime
 import logging.config
 from functools import reduce
@@ -9,6 +12,7 @@ from urllib.parse import urljoin
 from tweeterpy import config
 from tweeterpy.constants import Path, PUBLIC_TOKEN
 from dataclasses import dataclass, field, fields, asdict, _MISSING_TYPE
+
 
 logging.config.dictConfig(config.LOGGING_CONFIG)
 logger = logging.getLogger(__name__)
@@ -190,6 +194,19 @@ def find_nested_key(dataset=None, nested_key=None):
         return {key: get_nested_data(dataset, key, []) for key in nested_key}
 
     return [get_nested_data(data, nested_key, []) for data in dataset] if isinstance(dataset, list) else get_nested_data(dataset, nested_key, [])
+
+
+def generate_hotp_token(key, counter, digits=6, digest='sha1'):
+    key = base64.b32decode(key.upper() + '=' * ((8 - len(key)) % 8))
+    counter = struct.pack('>Q', counter)
+    mac = hmac.new(key, counter, digest).digest()
+    offset = mac[-1] & 0x0f
+    binary = struct.unpack('>L', mac[offset:offset+4])[0] & 0x7fffffff
+    return str(binary)[-digits:].zfill(digits)
+
+
+def generate_totp_token(key, time_step=30, digits=6, digest='sha1'):
+    return generate_hotp_token(key, int(time.time() / time_step), digits, digest)
 
 
 @dataclass
