@@ -161,7 +161,8 @@ class TaskHandler:
                             # otp_required = True if hint_message == "enter code" and input_type == "number" else False
                             backup_code_required = True if hint_message == "enter code" and input_type == "text" else False
                             if backup_code_required:
-                                raise Exception(error_message)  # "Enter your backup code"
+                                backup_code_required_error_message = 'Backup code required.'
+                                raise Exception(backup_code_required_error_message)
                         else:
                             email_verification = True if input_type == "email" or (hint_message == "phone or email" and input_type == "text") else False
                             phone_verification = True if hint_message == "phone number" and input_type == "telephone" else False
