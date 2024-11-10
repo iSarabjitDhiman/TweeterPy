@@ -28,6 +28,8 @@ class TweeterPy:
             proxies (dict, optional): Proxies to use. Format {"http":"proxy_here","https":"proxy_here"}. Defaults to None.
             log_level (str, optional): Logging level : "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL". Defaults to None.
         """
+        if log_level is None:
+            log_level = "INFO"
         set_log_level(log_level, external_only=False)
 
         if proxies and isinstance(proxies, str):
