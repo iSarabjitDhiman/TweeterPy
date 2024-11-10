@@ -43,6 +43,12 @@ class TweeterPy:
         self.update_api(restore_cache=restore_cache)
 
     def update_api(self, restore_cache=True):
+        """
+        Update API Manually
+
+        Args:
+            restore_cache (bool, optional): Set whether to restore offline (cached/old) version or online (latest) version of the API data. Defaults to True.
+        """
         if self.request_client is None:
             self.generate_session()
         token = self.request_client.session.headers.pop("Authorization")

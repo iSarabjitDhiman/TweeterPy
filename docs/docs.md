@@ -3,24 +3,26 @@
 ## Import & Initialize
 
 ```python
-from tweeterpy import TweeterPy
-from tweeterpy import config # if want to change configurations.Check out config docs.
+TweeterPy(session=None,session_name=None)
+    """
+        Args:
+            proxies (dict, optional): Proxies to use. Format {"http":"proxy_here", "https":"proxy_here"}. Defaults to None.
+            log_level (str, optional): Logging level : "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL". Defaults to "INFO".
 
-twitter = TweeterPy()
+        Returns:
+            TweeterPy: TweeterPy object.
+    """
+
+
+from tweeterpy import TweeterPy
+
+twitter = TweeterPy(log_level="INFO")
 ```
 
 > ### Example - Get User ID of a User
 
 ```python
 from tweeterpy import TweeterPy
-from tweeterpy import config
-
-# Check Configuration docs for the available settings.
-# config.PROXY = {"http":"127.0.0.1","https":"127.0.0.1"}
-# config.TIMEOUT = 10
-
-# Disable/Enable Api Update which occurs at the startup Initialization.
-# config.UPDATE_API = False
 
 twitter = TweeterPy()
 
@@ -47,12 +49,7 @@ print(twitter.get_user_id('elonmusk'))
 ```python
 import time, random
 from tweeterpy import TweeterPy
-from tweeterpy import config
 from tweeterpy.util import RateLimitError
-
-# Check Configuration docs for the available settings.
-# config.PROXY = {"http":"127.0.0.1","https":"127.0.0.1"}
-# config.TIMEOUT = 10
 
 twitter = TweeterPy()
 # login if required
@@ -177,6 +174,22 @@ datapoints = [('legacy','name'),'screen_name','followers_count','friends_count',
 
 user_details = find_nested_key(user,datapoints)
 
+```
+
+## Update API manually
+
+```python
+update_api(restore_cache=True)
+
+    """
+        Update API endpoints, Features manually.
+
+        Args:
+            restore_cache (bool, optional): Set whether to restore offline (cached/old) version or online (latest) version of the API data. Defaults to True.
+
+        Returns:
+            bool: Returns True if the user is logged in.
+    """
 ```
 
 ## Check If User is Logged In
