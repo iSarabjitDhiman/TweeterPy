@@ -30,12 +30,14 @@ class TweeterPy:
         """
         if log_level is None:
             log_level = "INFO"
-        set_log_level(log_level, external_only=False)
 
         if proxies and isinstance(proxies, str):
             proxies = {'http': proxies, 'https': proxies}
+
         self.proxies = proxies
         self.request_client: RequestClient = None
+
+        set_log_level(log_level, external_only=False)
         self.generate_session()
 
         # update api endpoints
@@ -97,8 +99,10 @@ class TweeterPy:
                     params['variables'] = json.dumps(variables)
                 response = self.request_client.request(url, params=params)
                 data_container['api_rate_limit'] = response.get("api_rate_limit")
-                data = [item for item in reduce(
-                    dict.get, data_path, response) if item['type'] == 'TimelineAddEntries'][0]['entries']
+                entries = reduce(lambda entry, key: entry.get(key, {}), data_path, response)
+                if not entries:
+                    return data_container
+                data = [item for item in entries if item['type'] == 'TimelineAddEntries'][0]['entries']
                 top_cursor = [
                     entry for entry in data if entry['entryId'].startswith('cursor-top')]
                 if top_cursor:
