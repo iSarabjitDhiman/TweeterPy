@@ -237,12 +237,12 @@ save_session(session=None,session_name=None)
 ## Restore Session from a Saved Session File
 
 ```python
-load_session(session_file_path=None,session=None)
+load_session(path=None,session=None)
     """
         Load a saved session.
 
         Args:
-            session_file_path (path, optional): File path to load session from. If None, shows a list of all saved session to choose from. Defaults to None.
+            path (path, optional): File path to load session from. If None, shows a list of all saved session to choose from. Defaults to None.
             session (request.Session, optional): requests.Session object to load a saved session into. Defaults to None.
 
         Returns:
