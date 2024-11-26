@@ -25,7 +25,7 @@ class DotDict(dict):
 class RateLimitError(Exception):
     def __init__(self, message=None):
         if message is None:
-            message = "API rate limit exhausted."
+            message = "Rate limit exceeded."
         super().__init__(message)
 
 
@@ -128,14 +128,15 @@ def handle_x_migration(session):
 def check_for_errors(response):
     if not isinstance(response, dict):
         return response
-    if "errors" in response and not response.get("data"):
-        error_message = "\n".join([error['message']
-                                  for error in response['errors']])
-        raise Exception(error_message)
 
-    if "code" in response and "message" in response:
-        raise Exception(
-            f"Error code {response.get('code')} - {response.get('message')}")
+    errors = response.get("errors", [])
+    if "error" in response:
+        errors.append(response.get("error"))
+
+    if errors and not response.get("data"):
+        error_message = "\n".join([f"Error code {error.get('code')} - {error.get('message')}" if error.get(
+            'code') else error.get('message') for error in errors if error])
+        raise Exception(error_message)
 
     return response
 
