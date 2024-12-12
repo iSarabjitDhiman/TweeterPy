@@ -93,7 +93,7 @@ class Path:
     # URLS
     DOMAIN = "x.com"
     BASE_URL = "https://x.com/"
-    API_URL = "https://x.com/i/api/graphql/"
+    API_URL = "https://api.x.com/graphql/"
     TASK_URL = "https://api.x.com/1.1/onboarding/task.json"
     GUEST_TOKEN_URL = "https://api.x.com/1.1/guest/activate.json"
     JAVSCRIPT_INSTRUMENTATION_URL = "https://twitter.com/i/js_inst"
