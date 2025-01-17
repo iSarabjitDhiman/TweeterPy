@@ -63,7 +63,7 @@ class ApiUpdater:
 
     def _get_api_file_url(self, page_source=None):
         if page_source is None:
-            page_source = self._get_home_page_source
+            page_source = self._get_home_page_source()
         try:
             api_file_name = re.search(api_file_regex, page_source).group(1)
             api_file_url = f"{Path.TWITTER_CDN}/api.{eval(api_file_name)}a.js"
@@ -75,7 +75,7 @@ class ApiUpdater:
 
     def _get_main_file_url(self, page_source=None):
         if page_source is None:
-            page_source = self._get_home_page_source
+            page_source = self._get_home_page_source()
         try:
             main_file_name = re.search(main_file_regex, page_source).group(0)
             main_file_url = f"{Path.TWITTER_CDN}/{main_file_name}"
