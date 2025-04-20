@@ -378,7 +378,7 @@ class TweeterPy:
 
         request_payload = self._generate_request_data(
             query_endpoint, variables, additional_features=True)
-        data_path = ('data', 'user', 'result', 'timeline_v2',
+        data_path = ('data', 'user', 'result', 'timeline',
                      'timeline', 'instructions')
         return self._handle_pagination(**request_payload, end_cursor=end_cursor, data_path=data_path, total=total, pagination=pagination)
 
