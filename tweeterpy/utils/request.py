@@ -3,7 +3,7 @@ import requests
 import logging.config
 from tweeterpy import util
 from urllib.parse import urlparse
-from tweeterpy.tid import ClientTransaction
+from x_client_transaction import ClientTransaction
 from tweeterpy.constants import LOGGING_CONFIG
 
 logging.config.dictConfig(LOGGING_CONFIG)
