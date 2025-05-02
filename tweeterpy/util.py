@@ -8,6 +8,7 @@ import logging.config
 from functools import reduce
 from typing import Dict, List
 from urllib.parse import urljoin
+from x_client_transaction.utils import get_ondemand_file_url
 from tweeterpy.constants import Path, PUBLIC_TOKEN, LOGGING_CONFIG, USER_AGENT, API_TMP_FILE
 from dataclasses import dataclass, field, fields, asdict, _MISSING_TYPE
 
@@ -92,6 +93,14 @@ def find_guest_token(page_source):
         raise Exception("Couldn't find guest token")
     guest_token = guest_token_match.group(1)
     return guest_token
+
+
+def get_ondemand_file_response(session, home_page):
+    ondemand_file_url = get_ondemand_file_url(response=home_page)
+    ondemand_file = session.request(url=ondemand_file_url, method="GET")
+    ondemand_file_response = bs4.BeautifulSoup(
+        ondemand_file.content, 'html.parser')
+    return ondemand_file_response
 
 
 def handle_x_migration(session):

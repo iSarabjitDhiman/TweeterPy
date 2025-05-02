@@ -190,8 +190,10 @@ class TweeterPy:
             session.headers.update(util.generate_headers())
             # home_page = self.request_client.request(Path.BASE_URL)
             home_page = util.handle_x_migration(session=session)
+            ondemand_file_response = util.get_ondemand_file_response(
+                session=session, home_page=home_page)
             self.request_client.client_transaction = ClientTransaction(
-                home_page_response=home_page)
+                home_page_response=home_page, ondemand_file_response=ondemand_file_response)
             try:
                 response = self.request_client.request(
                     Path.GUEST_TOKEN_URL, method="POST")
