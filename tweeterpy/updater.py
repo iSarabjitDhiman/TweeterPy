@@ -10,7 +10,8 @@ from tweeterpy.constants import Path, FeatureSwitch, API_TMP_FILE, LOGGING_CONFI
 logging.config.dictConfig(LOGGING_CONFIG)
 logger = logging.getLogger(__name__)
 
-dataset_regex = re.compile(r'''exports\s*=\s*{(.*?)},''', re.VERBOSE)
+dataset_regex = re.compile(
+    r'''exports\s*=\s*{((.*?)(queryId)(.*?))},''', re.VERBOSE)
 api_file_regex = re.compile(r'''api:(.*?),''', re.VERBOSE)
 main_file_regex = re.compile(r'''main(.?)(\w*).?js''', re.VERBOSE)
 feature_switch_regex = re.compile(r'''.featureSwitch.:(.*?)}},''', re.VERBOSE)
@@ -105,7 +106,7 @@ class ApiUpdater:
             matches.append(match.group(1))
 
         dict_data = [demjson3.decode("{" + each_match)
-                     for each_match in matches if "function" not in each_match]
+                     for each_match in matches]
         return dict_data
 
     def _map_data(self, old_endpoints, new_endpoints):
