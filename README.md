@@ -1,12 +1,12 @@
 <h1 align="center">TweeterPy</h1>
 
 <p align="center">
-<a href="https://choosealicense.com/licenses/mit/"> <img src="https://img.shields.io/badge/License-MIT-green.svg"></a>
-<a href="https://www.python.org/"><img src="https://img.shields.io/pypi/pyversions/tweeterpy"></a>
-<a href="https://pypi.org/project/tweeterpy/"> <img src="https://img.shields.io/pypi/v/tweeterpy"></a>
-<a href="https://github.com/iSarabjitDhiman/TweeterPy/commits"> <img src="https://img.shields.io/github/last-commit/iSarabjitDhiman/TweeterPy"></a>
+<a href="https://choosealicense.com/licenses/mit/"> <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License"></a>
+<a href="https://www.python.org/"><img src="https://img.shields.io/pypi/pyversions/tweeterpy" alt="pyversions"></a>
+<a href="https://pypi.org/project/tweeterpy/"> <img src="https://img.shields.io/pypi/v/tweeterpy" alt="pypi"></a>
+<a href="https://github.com/iSarabjitDhiman/TweeterPy/commits"> <img src="https://img.shields.io/github/last-commit/iSarabjitDhiman/TweeterPy" alt="github"></a>
 <a href="https://discord.gg/pHY6CU5Ke4"> <img alt="Discord" src="https://img.shields.io/discord/1149281691479851018?style=flat&logo=discord&logoColor=white"></a>
-<a href="https://twitter.com/isarabjitdhiman"> <img src="https://img.shields.io/twitter/follow/iSarabjitDhiman?style=social"></a>
+<a href="https://twitter.com/isarabjitdhiman"> <img src="https://img.shields.io/twitter/follow/iSarabjitDhiman?style=social" alt="twitter"></a>
 
 ## Overview
 
@@ -18,20 +18,20 @@ TweeterPy is a python library to extract data from Twitter. TweeterPy API lets y
 
 Install TweeterPy with pip
 
-```python
-  pip install tweeterpy
+```shell
+pip install tweeterpy
 ```
 
 ## Usage/Examples
 
-```python
+```shell
 python quickstart.py
 ```
 
 OR
 
 ```python
-from twitter import TweeterPy
+from tweeterpy import TweeterPy
 # proxy = {'http': 'proxy_here', 'https': 'proxy_here'}
 proxy = None
 TweeterPy(proxies=proxy, log_level="INFO")
@@ -50,7 +50,7 @@ print(twitter.get_user_id('elonmusk'))
 
 ## Documentation
 
-Check out step by step guide.
+Check out step-by-step guide.
 
 [Documentation](docs/docs.md)
 

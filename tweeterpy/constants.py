@@ -9,7 +9,7 @@ USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 # Filename to store api data/endpoints as a backup.
 API_TMP_FILE = "tweeterpy_api.json"
 
-# Directory path/name to save and load logged in sessions/cookies. Default path is current directory. i.e. current_path/Twitter Saved Sessions
+# Directory path/name to save and load logged-in sessions/cookies. Default path is current directory. i.e. current_path/Twitter Saved Sessions
 DEFAULT_SESSION_DIRECTORY = "Twitter Saved Sessions"
 
 # File name to save logs.

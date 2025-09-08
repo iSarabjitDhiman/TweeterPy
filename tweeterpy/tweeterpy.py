@@ -145,10 +145,10 @@ class TweeterPy:
 
     @property
     def me(self):
-        """Returns logged in user information.
+        """Returns logged-in user information.
 
         Returns:
-            dict: Currently logged in user's data.
+            dict: Currently logged-in user's data.
         """
         variables = {"withCommunitiesMemberships": True,
                      "withSubscribedTab": True, "withCommunitiesCreation": True}
@@ -216,11 +216,11 @@ class TweeterPy:
         return self.session
 
     def save_session(self, session=None, session_name=None, path=None):
-        """Save a logged in session to avoid frequent logins in future.
+        """Save a logged-in session to avoid frequent logins in future.
 
         Args:
             session (requests.Session, optional): requests.Session object you want to save. If None, saves current session by default. Defaults to None. 
-            session_name (str, optional): Session name. If None, uses currently logged in username. Defaults to None.
+            session_name (str, optional): Session name. If None, uses currently logged-in username. Defaults to None.
             path (str, optional): Session directory. If None, uses DEFAULT_SESSION_DIRECTORY from constants.py. Defaults to None.
 
         Returns:
@@ -345,7 +345,7 @@ class TweeterPy:
             user_ids (list): List of twitter users' IDs.
 
         Returns:
-            list: Multiple users data.
+            list: Multiple users' data.
         """
         variables = {"userIds": user_ids}
         request_payload = self._generate_request_data(
