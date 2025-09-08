@@ -26,15 +26,15 @@ from tweeterpy import TweeterPy
 
 twitter = TweeterPy()
 
-# By Deafult it uses a Guest Session.
-# Try to fetch data without login first, i.e. with a guest session. Use logged in sessions only if required.
+# By default, it uses a Guest Session.
+# Try to fetch data without login first, i.e. with a guest session. Use logged-in sessions only if required.
 
 
-# If you want to use it with logged in session, use any one of the followings to generate a logged in session.
+# If you want to use it with logged-in session, use any one of the followings to generate a logged-in session.
 
 # Multiple Ways of generating Sessions.
 
-> # DON'T USE ALL THREE, JUST USE ANY ONE OF THE FOLLOWINGS.
+## DON'T USE ALL THREE, JUST USE ANY ONE OF THE FOLLOWINGS.
 
 # twitter.generate_session(auth_token="auth_token_here") #-- Use Auth-Token to Login
 # twitter.login(username=username, password=password, email=email, phone=phone) #-- Use credentials to login.
@@ -205,7 +205,7 @@ logged_in()
     """
 ```
 
-## Get Logged In User Details
+## Get Logged-In User Details
 
 ```python
 self.me
@@ -218,7 +218,7 @@ self.me
     """
 ```
 
-## Save a Logged In Session
+## Save a Logged-In Session
 
 ```python
 save_session(session=None,session_name=None)
