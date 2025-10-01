@@ -1,8 +1,8 @@
 import bs4
-import requests
 import logging.config
 from tweeterpy import util
 from urllib.parse import urlparse
+from curl_cffi.requests.session import Session
 from x_client_transaction import ClientTransaction
 from tweeterpy.constants import LOGGING_CONFIG
 
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class RequestClient:
-    def __init__(self, session: requests.Session):
+    def __init__(self, session: Session):
         self.session = session
         self.client_transaction = None
 

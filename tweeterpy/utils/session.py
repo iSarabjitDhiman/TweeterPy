@@ -1,7 +1,7 @@
 import os
 import pickle
-import requests
 import logging.config
+from curl_cffi.requests.session import Session
 from tweeterpy.constants import DEFAULT_SESSION_DIRECTORY, LOGGING_CONFIG
 
 logging.config.dictConfig(LOGGING_CONFIG)
@@ -36,7 +36,7 @@ def _show_saved_sessions(directory_path=None):
 def save_session(filename=None, path=None, session=None):
     if session is None:
         raise NameError("name 'session' is not defined.")
-    if not isinstance(session, requests.Session):
+    if not isinstance(session, Session):
         raise TypeError(
             f"Invalid session type. {session} is not a requests.Session Object...")
     if filename is None:
@@ -54,7 +54,7 @@ def save_session(filename=None, path=None, session=None):
 def load_session(path=None, session=None):
     if session is None:
         raise NameError("name 'session' is not defined.")
-    if not isinstance(session, requests.Session):
+    if not isinstance(session, Session):
         raise TypeError(
             f"Invalid session type. {session} is not a requests.Session Object...")
     if path is None:

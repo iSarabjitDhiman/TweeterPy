@@ -1,8 +1,8 @@
 import json
 import random
 import getpass
-import requests
 import logging.config
+import curl_cffi
 from functools import reduce
 from typing import Union, Dict
 from x_client_transaction import ClientTransaction
@@ -139,7 +139,7 @@ class TweeterPy:
 
     @session.setter
     def session(self, session):
-        if not isinstance(session, requests.Session):
+        if not isinstance(session, curl_cffi.requests.session.Session):
             raise Exception("invalid session")
         self.request_client = RequestClient(session=session)
 
@@ -182,7 +182,8 @@ class TweeterPy:
         """
         try:
             logger.debug("Trying to generate a new session.")
-            self.request_client = RequestClient(session=requests.Session())
+            self.request_client = RequestClient(
+                session=curl_cffi.Session(impersonate="chrome"))
             session = self.request_client.session
             if self.proxies:
                 session.proxies = self.proxies

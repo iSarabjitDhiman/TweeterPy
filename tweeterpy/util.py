@@ -31,24 +31,24 @@ class RateLimitError(Exception):
 
 
 def generate_headers(session=None, custom_headers=None):
-    headers = {"Authority": Path.DOMAIN,
-               "Accept-Language": "en-US,en;q=0.9",
-               "Cache-Control": "no-cache",
-               "Referer": Path.BASE_URL,
-               "User-Agent": USER_AGENT,
-               "X-Twitter-Active-User": "yes",
-               "X-Twitter-Client-Language": "en"
+    headers = {"authority": Path.DOMAIN,
+               "accept-language": "en-US,en;q=0.9",
+               "cache-control": "no-cache",
+               "referer": Path.BASE_URL,
+               "user-agent": USER_AGENT,
+               "x-twitter-active-user": "yes",
+               "x-twitter-client-language": "en"
                }
     if custom_headers and isinstance(custom_headers, dict):
         headers.update(custom_headers)
     if session:
-        headers.update({"Authorization": PUBLIC_TOKEN})
+        headers.update({"authorization": PUBLIC_TOKEN})
         headers.update(dict(session.headers))
         if "auth_token" in session.cookies.keys():
             session.get(Path.BASE_URL)
             csrf_token = session.cookies.get("ct0", None)
-            headers.update({"X-Csrf-Token": csrf_token,
-                            "X-Twitter-Auth-Type": "OAuth2Session"})
+            headers.update({"x-csrf-token": csrf_token,
+                            "x-twitter-auth-type": "OAuth2Session"})
         session.headers.update(headers)
     return headers
 

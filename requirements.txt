@@ -1,6 +1,6 @@
 beautifulsoup4==4.12.2
+curl-cffi==0.13.0
 demjson3==3.0.6
 lxml==5.2.2
 pyotp==2.9.0
-requests==2.32.2
 XClientTransaction==1.0.0
