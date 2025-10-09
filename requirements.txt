@@ -3,4 +3,4 @@ curl-cffi==0.13.0
 demjson3==3.0.6
 lxml==5.2.2
 pyotp==2.9.0
-XClientTransaction==1.0.0
+XClientTransaction==1.0.1

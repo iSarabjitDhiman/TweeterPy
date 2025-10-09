@@ -98,8 +98,7 @@ def find_guest_token(page_source):
 def get_ondemand_file_response(session, home_page):
     ondemand_file_url = get_ondemand_file_url(response=home_page)
     ondemand_file = session.request(url=ondemand_file_url, method="GET")
-    ondemand_file_response = bs4.BeautifulSoup(
-        ondemand_file.content, 'html.parser')
+    ondemand_file_response = ondemand_file.text
     return ondemand_file_response
 
 
