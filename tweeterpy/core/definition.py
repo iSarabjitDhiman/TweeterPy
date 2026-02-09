@@ -1,7 +1,5 @@
 from typing import Any, Dict, Optional
 
-from pydantic import Field
-
 from tweeterpy.constants import FEATURE_SWITCHES_PRESET
 from tweeterpy.core.resources import XOperations
 from tweeterpy.schemas import Endpoint, FeatureSwitches, FieldToggles, Metadata, Operation, Route
@@ -10,14 +8,18 @@ from tweeterpy.utils.casing import CasingType, transform_casing
 
 
 class APIDefinition:
-    features: FeatureSwitches = Field(default_factory=FeatureSwitches)
-    features_preset: FeatureSwitches = Field(
-        default_factory=lambda: FeatureSwitches(data=FEATURE_SWITCHES_PRESET.copy()))
-    operations: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+    def __init__(self, operations: Optional[Dict[str, Any]] = None, features_preset: Optional[FeatureSwitches] = None, features: Optional[FeatureSwitches] = None):
+        self.operations = operations or {}
+        self.features_preset = features_preset if isinstance(
+            features_preset, FeatureSwitches) else FeatureSwitches(data=FEATURE_SWITCHES_PRESET.copy())
+        self.features = features if isinstance(
+            features, FeatureSwitches) else FeatureSwitches()
 
     def get_operation_data(self, operation_name: str) -> Dict[str, Any]:
+        normalized_name = transform_casing(
+            text=operation_name, target=CasingType.UPPER_SNAKE)
         if operation_name in self.operations:
-            return self.operations.get(transform_casing(text=operation_name, target=CasingType.UPPER_SNAKE), {})
+            return self.operations.get(normalized_name, {})
 
         operation_template = getattr(XOperations, operation_name, None)
         if isinstance(operation_template, Operation):
@@ -63,7 +65,7 @@ class APIDefinition:
         )
 
     def create_operation(self, operation_name: str, operation_type: Optional[OperationType] = None, query_id: Optional[str] = None, variables: Optional[Dict[str, Any]] = None) -> Operation:
-        operation_data = self.get_operation_data(operation_name)
+        operation_data = self.get_operation_data(operation_name=operation_name)
 
         query_id = query_id or operation_data.get(
             "query_id") or operation_data.get("queryId")

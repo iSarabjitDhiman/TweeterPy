@@ -1,4 +1,3 @@
-from tweeterpy.constants import FEATURE_SWITCHES_PRESETS
 from tweeterpy.schemas import Endpoint, Operation
 from tweeterpy.utils.casing import CasingType, transform_casing
 
