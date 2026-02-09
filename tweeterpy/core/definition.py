@@ -3,9 +3,10 @@ from typing import Any, Dict, Optional
 from pydantic import Field
 
 from tweeterpy.constants import FEATURE_SWITCHES_PRESET
-from tweeterpy.core.resources import CasingType, transform_casing, XOperations
+from tweeterpy.core.resources import XOperations
 from tweeterpy.schemas import Endpoint, FeatureSwitches, FieldToggles, Metadata, Operation, Route
 from tweeterpy.schemas.constants import OperationType
+from tweeterpy.utils.casing import CasingType, transform_casing
 
 
 class APIDefinition:
