@@ -1,6 +1,12 @@
 import logging.config
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+CURRENT_DIRECTORY = Path(__file__).resolve().parent
+BASE_DIRECTORY = CURRENT_DIRECTORY.parent
+
+PACKAGE_NAME = CURRENT_DIRECTORY.name
 
 PUBLIC_TOKEN = 'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA'
 
@@ -11,6 +17,38 @@ API_TMP_FILE = "tweeterpy_api.json"
 
 # Directory path/name to save and load logged in sessions/cookies. Default path is current directory. i.e. current_path/Twitter Saved Sessions
 DEFAULT_SESSION_DIRECTORY = "Twitter Saved Sessions"
+
+FEATURE_SWITCHES_PRESET = {
+    "responsive_web_graphql_exclude_directive_enabled": True,
+    "verified_phone_label_enabled": True,
+    "responsive_web_graphql_skip_user_profile_image_extensions_enabled": False,
+    "responsive_web_graphql_timeline_navigation_enabled": True,
+    "hidden_profile_likes_enabled": False,
+    "hidden_profile_subscriptions_enabled": True,
+    "highlights_tweets_tab_ui_enabled": True,
+    "responsive_web_twitter_article_notes_tab_enabled": False,
+    "creator_subscriptions_tweet_preview_api_enabled": True,
+    "subscriptions_verification_info_verified_since_enabled": True,
+    "subscriptions_verification_info_is_identity_verified_enabled": True,
+    "rweb_lists_timeline_redesign_enabled": True,
+    "c9s_tweet_anatomy_moderator_badge_enabled": True,
+    "tweetypie_unmention_optimization_enabled": True,
+    "responsive_web_edit_tweet_api_enabled": True,
+    "graphql_is_translatable_rweb_tweet_is_translatable_enabled": True,
+    "view_counts_everywhere_api_enabled": True,
+    "longform_notetweets_consumption_enabled": True,
+    "responsive_web_twitter_article_tweet_consumption_enabled": False,
+    "tweet_awards_web_tipping_enabled": False,
+    "freedom_of_speech_not_reach_fetch_enabled": True,
+    "standardized_nudges_misinfo": True,
+    "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled": False,
+    "rweb_video_timestamps_enabled": True,
+    "longform_notetweets_rich_text_read_enabled": True,
+    "longform_notetweets_inline_media_enabled": False,
+    "responsive_web_media_download_video_enabled": False,
+    "responsive_web_enhance_cards_enabled": False
+}
+
 
 # File name to save logs.
 LOG_FILE_NAME = "tweeterpy.log"
@@ -86,44 +124,6 @@ class Color:
     NEGATIVE = "\033[7m"
     CROSSED = "\033[9m"
     RESET = "\033[0m"
-
-
-class Path:
-    # Data will be updated automatically upon API update (Manipulated by ApiUpdater in api_util.py).
-    # URLS
-    DOMAIN = "x.com"
-    BASE_URL = "https://x.com/"
-    API_URL = "https://api.x.com/graphql/"
-    TASK_URL = "https://api.x.com/1.1/onboarding/task.json"
-    GUEST_TOKEN_URL = "https://api.x.com/1.1/guest/activate.json"
-    JAVSCRIPT_INSTRUMENTATION_URL = "https://twitter.com/i/js_inst"
-    TWITTER_CDN = "https://abs.twimg.com/responsive-web/client-web"
-    HOME_TIMELINE_GUEST_URL = "https://x.com/i/api/2/guide.json"
-    X_MIGRATE_URL = "https://x.com/x/migrate"
-    # ENDPOINTS
-    HOME_TIMELINE_ENDPOINT = "ggIgQGz-fN1Z9YBhAoTCVA/HomeTimeline"
-    HOME_LATEST_TIMELINE_ENDPOINT = "Js4oMnCV2D4gpEocblJ6Tg/HomeLatestTimeline"
-    USER_ID_ENDPOINT = "9zwVLJ48lmVUk8u_Gh9DmA/ProfileSpotlightsQuery"
-    USER_INFO_ENDPOINT = "8slyDObmnUzBOCu7kYZj_A/UserByRestId"
-    USER_DATA_ENDPOINT = "qRednkZG-rn1P6b48NINmQ/UserByScreenName"
-    MULTIPLE_USERS_DATA_ENDPOINT = "GD4q8bBE2i6cqWw2iT74Gg/UsersByRestIds"
-    USER_MEDIA_ENDPOINT = "wlwQkva3Zii3b8CJjXSBCw/UserMedia"
-    USER_TWEETS_ENDPOINT = "NPgNFbBEhFTul68weP-tYg/UserTweets"
-    USER_TWEETS_AND_REPLIES_ENDPOINT = "2dNLofLWl-u8EQPURIAp9w/UserTweetsAndReplies"
-    TWEETS_LIST_ENDPOINT = "2Vjeyo_L0nizAUhHe3fKyA/ListLatestTweetsTimeline"
-    TOPIC_TWEETS_ENDPOINT = "KDCkc4PZY-sCy_L-scQImw/TopicLandingPage"
-    TWEET_DETAILS_ENDPOINT = "Pn68XRZwyV9ClrAEmK8rrQ/TweetDetail"
-    TWEET_DETAILS_BY_ID = "0hWvDhmW8YQ-S_ib3azIrw/TweetResultByRestId"
-    VIEWER_ENDPOINT = "k3027HdkVqbuDPpdoniLKA/Viewer"
-    SEARCH_ENDPOINT = "IOJ89SDQ9IrZ2t7hSD4Fdg/SearchTimeline"
-    FOLLOWERS_ENDPOINT = "WWFQL1d4gxtqm2mjZCRa-Q/Followers"
-    FOLLOWINGS_ENDPOINT = "OLcddmNLPVXGDgSdSVj0ow/Following"
-    MUTUAL_FOLLOWERS_ENDPOINT = "wYAUyD58y1AFol2g2bLqzw/FollowersYouKnow"
-    LIKED_TWEETS_ENDPOINT = "QPKcH_nml6UIOxHLjmNsuw/Likes"
-    PROFILE_CATEGORY_ENDPOINT = "6OFpJ3TH3p8JpwOSgfgyhg/BizProfileFetchUser"
-    TWEET_LIKES_ENDPOINT = "mpMee2WCjo7Nm4gRRHHnvA/Favoriters"
-    RETWEETED_BY_ENDPOINT = "7Fwe5A6kE05QIybims116A/Retweeters"
-    USER_HIGHLIGHTS_ENDPOINT = "w9-i9VNm_92GYFaiyGT1NA/UserHighlightsTweets"
 
 
 class FeatureSwitch:
