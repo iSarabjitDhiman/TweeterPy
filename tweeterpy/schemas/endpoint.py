@@ -9,6 +9,7 @@ from tweeterpy.schemas.route import Route
 class Endpoint(TweeterPySchema):
     name: Optional[str] = None
     route: Route
+    url: Optional[str] = None
 
     @model_validator(mode="after")
     def set_default_name(self):

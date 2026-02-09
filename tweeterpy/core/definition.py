@@ -1,7 +1,7 @@
 from typing import Any, Dict, Optional
 
 from tweeterpy.constants import FEATURE_SWITCHES_PRESET
-from tweeterpy.core.resources import XOperations
+from tweeterpy.core.resources import XOperations, XUrls
 from tweeterpy.schemas import Endpoint, FeatureSwitches, FieldToggles, Metadata, Operation, Route
 from tweeterpy.schemas.constants import OperationType
 from tweeterpy.utils.casing import CasingType, transform_casing
@@ -88,8 +88,10 @@ class APIDefinition:
         variables = {
             **operation_data.get("variables", {}), **(variables or {})}
 
+        full_url = f"{XUrls.GRAPHQL_BASE}/{query_id}/{operation_name}"
+
         endpoint = Endpoint(name=operation_name, route=Route(
-            query_id=query_id, operation_name=operation_name, operation_type=operation_type))
+            query_id=query_id, operation_name=operation_name, operation_type=operation_type), url=full_url)
 
         return Operation(
             endpoint=endpoint,

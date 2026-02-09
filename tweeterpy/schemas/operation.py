@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from pydantic import Field, computed_field, model_validator
 
@@ -52,6 +52,11 @@ class Operation(TweeterPySchema):
 
     @computed_field
     @property
+    def path(self) -> str:
+        return self.endpoint.path
+
+    @computed_field
+    @property
     def query_id(self) -> str:
         return self.endpoint.route.query_id
 
@@ -59,9 +64,10 @@ class Operation(TweeterPySchema):
     def type(self) -> OperationType:
         return self.operation_type
 
+    @computed_field
     @property
-    def url(self) -> str:
-        return f"https://api.x.com/graphql/{self.query_id}/{self.operation_name}"
+    def url(self) -> Optional[str]:
+        return self.endpoint.url
 
     @property
     def payload(self) -> Dict[str, Any]:
