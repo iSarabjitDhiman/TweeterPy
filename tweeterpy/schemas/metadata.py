@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import Field
+from pydantic import Field, model_serializer
 
 from tweeterpy.schemas.base import TweeterPySchema
 
@@ -44,6 +44,14 @@ class ToggleMap(TweeterPySchema):
     @property
     def payload(self) -> Dict[str, Any]:
         """Returns the dictionary for the API request."""
+        return self.data
+
+    @model_serializer
+    def serialize_model(self) -> Dict[str, Any]:
+        """
+        Forces Pydantic to treat this model as the dictionary itself.
+        This removes the 'data' key from the output.
+        """
         return self.data
 
 
