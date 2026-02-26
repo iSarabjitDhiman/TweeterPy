@@ -41,6 +41,15 @@ class ToggleMap(TweeterPySchema):
         self.data[name] = value
         return self
 
+    def update(self, data: Dict[str, Any]):
+        """Updates existing toggles."""
+        for key, value in data.items():
+            if key in self.data and isinstance(self.data[key], dict) and isinstance(value, dict):
+                self.data[key].update(value)
+            else:
+                self.data[key] = value
+        return self
+
     @property
     def payload(self) -> Dict[str, Any]:
         """Returns the dictionary for the API request."""
