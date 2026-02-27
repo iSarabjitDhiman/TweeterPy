@@ -77,7 +77,7 @@ class TweeterPySession(ABC):
                 response=response) else ResponseType.TEXT
 
         if response_type is ResponseType.JSON:
-            parse_json(data=response)
+            return parse_json(data=response)
 
         if response_type is ResponseType.HTML:
             return parse_html(data=response)
