@@ -42,6 +42,7 @@ class TweeterPySession(ABC):
 
     @property
     def is_async(self) -> bool:
+        """Determines if the session is asynchronous."""
         return inspect.iscoroutinefunction(self._send)
 
     @property
@@ -60,14 +61,13 @@ class TweeterPySession(ABC):
 
     @abstractmethod
     def _send(self, url: str, method: HttpMethod, **kwargs) -> Any:
+        """The actual HTTP transport implementation."""
         raise NotImplementedError
 
     def _process_response(self, response: Any, response_type: ResponseType) -> Any:
         if inspect.iscoroutine(response):
             raise TypeError(
-                "_process_response received a coroutine. "
-                "Ensure you are awaiting the session request call."
-            )
+                "_process_response received a coroutine. Await the request call.")
 
         if hasattr(response, "raise_for_status") and callable(response.raise_for_status):
             response.raise_for_status()
@@ -176,7 +176,6 @@ class TweeterPySession(ABC):
         method = self._validate_method(method=method)
         if self.is_async:
             return self._async_request(url=url, method=method, response_type=response_type, **kwargs)
-
         return self._sync_request(url=url, method=method, response_type=response_type, **kwargs)
 
     async def request_async(self, url: str, method: Union[HttpMethod, str] = "GET", response_type: ResponseType = ResponseType.AUTO, **kwargs):

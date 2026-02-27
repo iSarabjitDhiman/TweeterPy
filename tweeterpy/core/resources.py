@@ -113,6 +113,8 @@ class RegexPatterns:
         rf'{re.escape(XUrls.TWITTER_CDN)}/main\.(?P<bundle_hash>[a-f0-9]+)\.js')
     META_DATA = re.compile(
         r'window\.__META_DATA__\s*=\s*(?P<meta_data>\{.*?\});', re.DOTALL)
+    MIGRATION_URL = re.compile(
+        r'(http(?:s)?://(?:www\.)?(twitter|x){1}\.com(/x)?/migrate([/?])?tok=[a-zA-Z0-9%\-_]+)+', re.VERBOSE)
     OPERATIONS = re.compile(
         r'e\.exports\s*=\s*(?P<operation>\{'
         r'(?=.*?queryId:\s*"(?P<query_id>[^"]+)")'

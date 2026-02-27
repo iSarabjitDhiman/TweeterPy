@@ -1,4 +1,6 @@
 from .definition import APIDefinition
-from .resources import XOperations, XUrls
+from .migration import XMigrationHandler
+from .resources import RegexPatterns, XFeatures, XOperations, XUrls
 
-__all__ = ["APIDefinition", "XOperations", "XUrls"]
+__all__ = ["APIDefinition", "RegexPatterns", "XFeatures",
+           "XMigrationHandler", "XOperations", "XUrls"]
