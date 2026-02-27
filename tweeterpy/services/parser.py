@@ -12,11 +12,26 @@ logger = logging.getLogger(__name__)
 
 
 class APIParser:
-    BUNDLE_NAME_PREFIXES = ('modules', 'shared~loader',
-                            'loader', 'bundle', 'shared~bundle', 'ondemand', 'api')
+    BUNDLE_NAME_PREFIXES = (
+        "modules",
+        "shared~loader",
+        "loader",
+        "bundle",
+        "shared~bundle",
+        "ondemand",
+        "api",
+    )
 
-    BUNDLE_NAME_EXCLUSIONS = ('i18n', 'emoji', 'icons', 'ondemand.countries',
-                              'vendors~', 'shared~ui', 'node_modules', 'react-syntax')
+    BUNDLE_NAME_EXCLUSIONS = (
+        "i18n",
+        "emoji",
+        "icons",
+        "ondemand.countries",
+        "vendors~",
+        "shared~ui",
+        "node_modules",
+        "react-syntax",
+    )
 
     def __init__(self) -> None:
         pass
@@ -38,29 +53,35 @@ class APIParser:
         return None
 
     @ensure_str("html_content")
-    def get_api_bundle_url(self, html_content: str, manifest: Optional[Dict] = None) -> Optional[str]:
+    def get_api_bundle_url(
+        self, html_content: str, manifest: Optional[Dict] = None
+    ) -> Optional[str]:
         bundle_url = self.get_bundle_url(
-            bundle_name="api", html_content=html_content, manifest=manifest)
+            bundle_name="api", html_content=html_content, manifest=manifest
+        )
 
         if not bundle_url:
             api_match = RegexPatterns.API_BUNDLE.search(html_content)
             if api_match:
-                api_bundle_hash = api_match.group('bundle_hash')
+                api_bundle_hash = api_match.group("bundle_hash")
                 bundle_url = f"{XUrls.TWITTER_CDN}/api.{api_bundle_hash}a.js"
 
         return bundle_url
 
     @ensure_str("html_content")
-    def get_bundle_url(self, bundle_name: str, html_content: str, manifest: Optional[Dict] = None) -> Optional[str]:
+    def get_bundle_url(
+        self, bundle_name: str, html_content: str, manifest: Optional[Dict] = None
+    ) -> Optional[str]:
         url_from_source = self.find_bundle_url(
-            html_content=html_content, bundle_name=bundle_name)
+            html_content=html_content, bundle_name=bundle_name
+        )
         if url_from_source:
             return url_from_source
 
         bundle_manifest = manifest or self.parse_bundle_manifest(
-            html_content=html_content)
-        bundle_hash = bundle_manifest.get(
-            bundle_name) if bundle_manifest else None
+            html_content=html_content
+        )
+        bundle_hash = bundle_manifest.get(bundle_name) if bundle_manifest else None
 
         if bundle_hash:
             return f"{XUrls.TWITTER_CDN}/{bundle_name}.{bundle_hash}a.js"
@@ -79,8 +100,13 @@ class APIParser:
             if bundle_name.startswith(self.BUNDLE_NAME_EXCLUSIONS):
                 continue
 
-            operational_bundles.append({"bundle_name": bundle_name, "bundle_hash": bundle_hash,
-                                       "bundle_url": f"{XUrls.TWITTER_CDN}/{bundle_name}.{bundle_hash}a.js"})
+            operational_bundles.append(
+                {
+                    "bundle_name": bundle_name,
+                    "bundle_hash": bundle_hash,
+                    "bundle_url": f"{XUrls.TWITTER_CDN}/{bundle_name}.{bundle_hash}a.js",
+                }
+            )
 
         return operational_bundles
 
@@ -92,7 +118,8 @@ class APIParser:
 
         raw_mapping = match.group("mapping")
         bundle_manifest = self.load_json(
-            data=normalize_js_object(raw_mapping), raise_error=False)
+            data=normalize_js_object(raw_mapping), raise_error=False
+        )
 
         return bundle_manifest
 
@@ -118,8 +145,7 @@ class APIParser:
         if isinstance(initial_state, dict) and "featureSwitch" in initial_state:
             return initial_state.get("featureSwitch")
 
-        feature_switch_match = RegexPatterns.FEATURE_SWITCH_OBJECT.search(
-            html_content)
+        feature_switch_match = RegexPatterns.FEATURE_SWITCH_OBJECT.search(html_content)
         if feature_switch_match:
             feature_switch = feature_switch_match.group("feature_switch")
             return self.load_json(data=feature_switch, raise_error=False)
@@ -132,8 +158,9 @@ class APIParser:
 
         for match in RegexPatterns.OPERATIONS.finditer(js_content):
             raw_operation = match.group("operation")
-            operation = self.load_json(data=normalize_js_object(
-                raw_operation), raise_error=False)
+            operation = self.load_json(
+                data=normalize_js_object(raw_operation), raise_error=False
+            )
 
             if not operation:
                 continue

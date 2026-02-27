@@ -13,14 +13,22 @@ class BaseSession(TweeterPySession):
 
         self._session: Any = session
 
-        self.request_hooks.extend([RequestHandlers.inject_auth_headers,
-                                  RequestHandlers.inject_guest_token,
-                                  RequestHandlers.inject_twitter_headers,
-                                  RequestHandlers.inject_transaction_id])
+        self.request_hooks.extend(
+            [
+                RequestHandlers.inject_auth_headers,
+                RequestHandlers.inject_guest_token,
+                RequestHandlers.inject_twitter_headers,
+                RequestHandlers.inject_transaction_id,
+            ]
+        )
 
-        self.response_hooks.extend([ResponseHandlers.api_error_validator,
-                                    ResponseHandlers.twitter_cookie_injector_hook,
-                                    ResponseHandlers.twitter_guest_token_handler])
+        self.response_hooks.extend(
+            [
+                ResponseHandlers.api_error_validator,
+                ResponseHandlers.twitter_cookie_injector_hook,
+                ResponseHandlers.twitter_guest_token_handler,
+            ]
+        )
 
         self.update_headers(TweeterPyConfig.headers())
 

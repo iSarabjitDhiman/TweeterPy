@@ -35,11 +35,10 @@ class CustomFormatter(logging.Formatter):
         logging.INFO: f"{Color.GREEN}{LOG_LEVEL_FORMAT}{Color.RESET}",
         logging.WARNING: f"{Color.YELLOW}{LOG_LEVEL_FORMAT}{Color.RESET}",
         logging.ERROR: f"{Color.LIGHT_RED}{LOG_LEVEL_FORMAT}{Color.RESET}",
-        logging.CRITICAL: f"{Color.BOLD}{Color.RED}{LOG_LEVEL_FORMAT}{Color.RESET}"
+        logging.CRITICAL: f"{Color.BOLD}{Color.RED}{LOG_LEVEL_FORMAT}{Color.RESET}",
     }
     for log_level, log_format in FORMATS.items():
-        FORMATS[log_level] = "%(asctime)s [{}] :: %(message)s".format(
-            log_format)
+        FORMATS[log_level] = "%(asctime)s [{}] :: %(message)s".format(log_format)
 
     def format(self, record):
         log_fmt = self.FORMATS.get(record.levelno)
@@ -48,7 +47,11 @@ class CustomFormatter(logging.Formatter):
 
 
 def set_log_level(log_level=None, return_loggers=False, external_only=False):
-    if log_level and log_level not in logging._levelToName and log_level not in logging._levelToName.values():
+    if (
+        log_level
+        and log_level not in logging._levelToName
+        and log_level not in logging._levelToName.values()
+    ):
         raise Exception("Invalid Log Level")
     if log_level is None:
         log_level = logging.ERROR
@@ -71,9 +74,15 @@ def disable_logger(original_function):
         except Exception as error:
             raise error
         finally:
-            [logging.getLogger(current_logger).setLevel(all_loggers.get(current_logger))
-             for current_logger in logging.root.manager.loggerDict.keys() if current_logger in list(all_loggers.keys())]
+            [
+                logging.getLogger(current_logger).setLevel(
+                    all_loggers.get(current_logger)
+                )
+                for current_logger in logging.root.manager.loggerDict.keys()
+                if current_logger in list(all_loggers.keys())
+            ]
         return returned_output
+
     return wrapper
 
 

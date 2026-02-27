@@ -16,15 +16,13 @@ class ToggleMap(TweeterPySchema):
     def enable(self, name: Union[str, List[str]]):
         """Sets one or more toggles to True."""
         names_list = [name] if isinstance(name, str) else name
-        self.data.update(
-            {name: True for name in names_list if name in self.data})
+        self.data.update({name: True for name in names_list if name in self.data})
         return self
 
     def disable(self, name: Union[str, List[str]]):
         """Sets one or more toggles to False."""
         names_list = [name] if isinstance(name, str) else name
-        self.data.update(
-            {name: False for name in names_list if name in self.data})
+        self.data.update({name: False for name in names_list if name in self.data})
         return self
 
     def get(self, name: Union[str, List[str]], default: Optional[bool] = None):
@@ -44,7 +42,11 @@ class ToggleMap(TweeterPySchema):
     def update(self, data: Dict[str, Any]):
         """Updates existing toggles."""
         for key, value in data.items():
-            if key in self.data and isinstance(self.data[key], dict) and isinstance(value, dict):
+            if (
+                key in self.data
+                and isinstance(self.data[key], dict)
+                and isinstance(value, dict)
+            ):
                 self.data[key].update(value)
             else:
                 self.data[key] = value

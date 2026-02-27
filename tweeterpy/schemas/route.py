@@ -19,10 +19,9 @@ class Route(TweeterPySchema):
     @classmethod
     def validate_id(cls, v: str) -> str:
         if not (15 <= len(v) <= 40):
-            raise ValueError(
-                f"Query ID '{v}' has a suspicious length ({len(v)}).")
+            raise ValueError(f"Query ID '{v}' has a suspicious length ({len(v)}).")
 
-        if not re.match(r'^[A-Za-z0-9_\-]+$', v):
+        if not re.match(r"^[A-Za-z0-9_\-]+$", v):
             raise ValueError(f"Query ID '{v}' contains invalid characters.")
 
         return v

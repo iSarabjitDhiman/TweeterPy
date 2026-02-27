@@ -21,7 +21,8 @@ class XMigrationHandler:
     @ensure_html("response")
     def get_migration_form(self, response: BeautifulSoup) -> Optional[Dict[str, Any]]:
         migration_form = response.select_one("form[name='f']") or response.select_one(
-            f"form[action='{XUrls.X_MIGRATION}']")
+            f"form[action='{XUrls.X_MIGRATION}']"
+        )
 
         if not migration_form:
             return
@@ -33,7 +34,7 @@ class XMigrationHandler:
                 input_field.get("name"): input_field.get("value")
                 for input_field in migration_form.select("input")
                 if input_field.get("name")
-            }
+            },
         }
 
     def run(self, response: BeautifulSoup):
@@ -41,8 +42,7 @@ class XMigrationHandler:
         if not migration_url:
             return response
 
-        migration_page = self.session.request_html(
-            method="GET", url=migration_url)
+        migration_page = self.session.request_html(method="GET", url=migration_url)
         migration_form = self.get_migration_form(response=migration_page)
         if migration_form:
             return self.session.request(**migration_form)
@@ -54,14 +54,18 @@ class XMigrationHandler:
         if not migration_url:
             return response
 
-        migration_page = await self.session.request_html(method="GET", url=migration_url)
+        migration_page = await self.session.request_html(
+            method="GET", url=migration_url
+        )
         migration_form = self.get_migration_form(response=migration_page)
         if migration_form:
             return await self.session.request(**migration_form)
 
         return response
 
-    def migrate(self, response: BeautifulSoup) -> Union[BeautifulSoup, Awaitable[BeautifulSoup]]:
+    def migrate(
+        self, response: BeautifulSoup
+    ) -> Union[BeautifulSoup, Awaitable[BeautifulSoup]]:
         if self.session.is_async:
             return self.run_async(response=response)
 

@@ -13,8 +13,9 @@ def is_json_response(response: Any) -> bool:
     headers = getattr(response, "headers", {})
 
     # Check for 'Content-Type' or 'content-type' (case-insensitive fetch)
-    content_type = str(headers.get(
-        "Content-Type", headers.get("content-type", ""))).lower()
+    content_type = str(
+        headers.get("Content-Type", headers.get("content-type", ""))
+    ).lower()
 
     return "application/json" in content_type or "json" in content_type
 

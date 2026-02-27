@@ -7,10 +7,7 @@ class OperationType(Enum):
 
     @property
     def http_method(self) -> str:
-        mapping = {
-            OperationType.QUERY: "GET",
-            OperationType.MUTATION: "POST"
-        }
+        mapping = {OperationType.QUERY: "GET", OperationType.MUTATION: "POST"}
         return mapping.get(self, "GET")
 
 

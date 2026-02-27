@@ -1,5 +1,5 @@
 import re
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 
 from tweeterpy.schemas import Endpoint, Operation
 
@@ -99,37 +99,44 @@ class RegexPatterns:
         r")"
     )
     DOCUMENT_COOKIE = re.compile(
-        r'document\.cookie\s*=\s*"(?P<cookie_content>.*?)"',
-        re.DOTALL
+        r'document\.cookie\s*=\s*"(?P<cookie_content>.*?)"', re.DOTALL
     )
     FEATURE_SWITCH_OBJECT = re.compile(
         r'"featureSwitch":\s*(?P<feature_switch>\{'
-        r'.*?'
+        r".*?"
         r'"customOverrides":\s*\{.*?\}'
-        r'\s*\})',
-        re.DOTALL
+        r"\s*\})",
+        re.DOTALL,
     )
     INITIAL_STATE = re.compile(
-        r'window\.__INITIAL_STATE__\s*=\s*(?P<initial_state>\{.*?\});', re.DOTALL)
+        r"window\.__INITIAL_STATE__\s*=\s*(?P<initial_state>\{.*?\});", re.DOTALL
+    )
     JS_BUNDLES = re.compile(
-        rf'{re.escape(XUrls.TWITTER_CDN)}/(?P<bundle_name>[\w\.~-]+)\.(?P<bundle_hash>[a-f0-9]+)a?\.js', re.IGNORECASE)
+        rf"{re.escape(XUrls.TWITTER_CDN)}/(?P<bundle_name>[\w\.~-]+)\.(?P<bundle_hash>[a-f0-9]+)a?\.js",
+        re.IGNORECASE,
+    )
     MAIN_JS_BUNDLE = re.compile(
-        rf'{re.escape(XUrls.TWITTER_CDN)}/main\.(?P<bundle_hash>[a-f0-9]+)\.js')
+        rf"{re.escape(XUrls.TWITTER_CDN)}/main\.(?P<bundle_hash>[a-f0-9]+)\.js"
+    )
     META_DATA = re.compile(
-        r'window\.__META_DATA__\s*=\s*(?P<meta_data>\{.*?\});', re.DOTALL)
+        r"window\.__META_DATA__\s*=\s*(?P<meta_data>\{.*?\});", re.DOTALL
+    )
     MIGRATION_URL = re.compile(
-        r'(http(?:s)?://(?:www\.)?(twitter|x){1}\.com(/x)?/migrate([/?])?tok=[a-zA-Z0-9%\-_]+)+', re.VERBOSE)
+        r"(http(?:s)?://(?:www\.)?(twitter|x){1}\.com(/x)?/migrate([/?])?tok=[a-zA-Z0-9%\-_]+)+",
+        re.VERBOSE,
+    )
     OPERATIONS = re.compile(
-        r'e\.exports\s*=\s*(?P<operation>\{'
+        r"e\.exports\s*=\s*(?P<operation>\{"
         r'(?=.*?queryId:\s*"(?P<query_id>[^"]+)")'
         r'(?=.*?operationName:\s*"(?P<operation_name>[^"]+)")'
         r'(?=.*?operationType:\s*"(?P<operation_type>[^"]+)")'
-        r'.*?\}\s*\})',
-        re.DOTALL
+        r".*?\}\s*\})",
+        re.DOTALL,
     )
-    QUERY_ID_VALIDATOR = re.compile(r'^[A-Za-z0-9_\-]+$')
+    QUERY_ID_VALIDATOR = re.compile(r"^[A-Za-z0-9_\-]+$")
     WORD_BOUNDARY_REGEX = re.compile(
-        r'[_.\s-]+|(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])')
+        r"[_.\s-]+|(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])"
+    )
 
     # JS_BUNDLES = re.compile(r'https://abs\.twimg\.com/responsive-web/client-web/(?:main|api)\.[a-z0-9]+\.js')
     # MAIN_JS_URL = re.compile(r'https://abs\.twimg\.com/responsive-web/client-web/main\.[a-z0-9]+\.js')

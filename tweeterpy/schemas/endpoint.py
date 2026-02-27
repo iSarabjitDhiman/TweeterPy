@@ -26,7 +26,11 @@ class Endpoint(TweeterPySchema):
             )
         query_id, _, operation_name = slug.strip("/").partition("/")
 
-        return Endpoint(name=name or operation_name, route=Route(query_id=query_id, operation_name=operation_name), **kwargs)
+        return Endpoint(
+            name=name or operation_name,
+            route=Route(query_id=query_id, operation_name=operation_name),
+            **kwargs,
+        )
 
     @property
     def method(self) -> str:

@@ -16,7 +16,6 @@ class CasingType(Enum):
 
 
 class Casing:
-
     @staticmethod
     def identify(text: str) -> CasingType:
         if not text:
@@ -35,11 +34,17 @@ class Casing:
             return CasingType.UPPERCASE
 
         if text[0].islower():
-            if any(character.isupper() and character not in ["_", "-"] for character in text):
+            if any(
+                character.isupper() and character not in ["_", "-"]
+                for character in text
+            ):
                 return CasingType.CAMEL
 
         if text[0].isupper():
-            if any(character.islower() and character not in ["_", "-"] for character in text):
+            if any(
+                character.islower() and character not in ["_", "-"]
+                for character in text
+            ):
                 return CasingType.PASCAL
             if text.istitle() and any(character.isspace() for character in text):
                 return CasingType.TITLE_CASE

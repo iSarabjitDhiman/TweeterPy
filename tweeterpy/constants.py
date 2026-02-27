@@ -1,4 +1,3 @@
-import re
 import logging.config
 from pathlib import Path
 
@@ -25,42 +24,42 @@ LOG_LEVEL = "INFO"
 
 # Log Configuration.
 LOGGING_CONFIG = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'standard': {
-            'format': '%(asctime)s [%(levelname)s] [Line No. %(lineno)d] %(name)s : %(funcName)s :: %(message)s'
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "%(asctime)s [%(levelname)s] [Line No. %(lineno)d] %(name)s : %(funcName)s :: %(message)s"
         },
-        'custom': {
+        "custom": {
             # 'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
-            'class': f"{PACKAGE_NAME}.utils.logging.CustomFormatter",
-        }
-    },
-    'handlers': {
-        'stream': {
-            'level': LOG_LEVEL,
-            'formatter': 'custom',
-            'class': 'logging.StreamHandler',
-            'stream': 'ext://sys.stdout'
+            "class": f"{PACKAGE_NAME}.utils.logging.CustomFormatter",
         },
-        'file': {
-            'level': 'DEBUG',
-            'formatter': 'standard',
-            'class': 'logging.FileHandler',
-            'filename': LOG_FILE_NAME,
-            "encoding": "utf-8"
-        }
     },
-    'loggers': {
-        '': {  # root logger
-            'handlers': ['stream', 'file'],
-            'level': 'DEBUG'
+    "handlers": {
+        "stream": {
+            "level": LOG_LEVEL,
+            "formatter": "custom",
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",
         },
-        '__main__': {  # if __name__ == '__main__'
-            'handlers': ['stream', 'file'],
-            'level': 'DEBUG',
-        }
-    }
+        "file": {
+            "level": "DEBUG",
+            "formatter": "standard",
+            "class": "logging.FileHandler",
+            "filename": LOG_FILE_NAME,
+            "encoding": "utf-8",
+        },
+    },
+    "loggers": {
+        "": {  # root logger
+            "handlers": ["stream", "file"],
+            "level": "DEBUG",
+        },
+        "__main__": {  # if __name__ == '__main__'
+            "handlers": ["stream", "file"],
+            "level": "DEBUG",
+        },
+    },
 }
 
 

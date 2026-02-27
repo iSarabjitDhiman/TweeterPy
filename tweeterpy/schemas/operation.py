@@ -13,7 +13,7 @@ class Operation(TweeterPySchema):
     variables: Dict[str, Any] = Field(default_factory=dict)
     metadata: Metadata = Field(default_factory=Metadata)
 
-    @model_validator(mode='before')
+    @model_validator(mode="before")
     @classmethod
     def normalize_raw_data(cls, data: Any) -> Any:
         if isinstance(data, dict) and "queryId" in data:
@@ -27,8 +27,8 @@ class Operation(TweeterPySchema):
                 "route": {
                     "query_id": query_id,
                     "operation_name": operation_name,
-                    "operation_type": operation_type
-                }
+                    "operation_type": operation_type,
+                },
             }
         return data
 
