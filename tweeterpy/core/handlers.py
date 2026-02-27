@@ -141,6 +141,12 @@ class ResponseHandlers(BaseHandler):
     @staticmethod
     def twitter_cookie_injector_hook(response: Any, session: TweeterPySession, **context):
         """Extracts document.cookie calls from Twitter's HTML and manually sets them in the session."""
+        response_headers = getattr(response, "headers", {})
+        content_type = str(response_headers.get(
+            "Content-Type", response_headers.get("content-type", ""))).lower()
+        if "json" in content_type:
+            return response
+
         content = to_string(data=response)
 
         if not content:

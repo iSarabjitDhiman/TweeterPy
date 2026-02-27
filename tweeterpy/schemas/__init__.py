@@ -4,5 +4,5 @@ from .operation import Operation
 from .route import Route
 
 
-__all__ = ["Route", "Endpoint", "Operation",
-           "Metadata", "FeatureSwitches", "FieldToggles"]
+__all__ = ["Endpoint", "FeatureSwitches",
+           "FieldToggles", "Metadata", "Operation", "Route"]
