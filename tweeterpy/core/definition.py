@@ -1,60 +1,36 @@
 from typing import Any, Dict, Optional
 
-from tweeterpy.constants import FEATURE_SWITCHES_PRESET
-from tweeterpy.core.resources import XOperations, XUrls
+from tweeterpy.core.resources import XFeatures, XOperations, XUrls
 from tweeterpy.schemas import Endpoint, FeatureSwitches, FieldToggles, Metadata, Operation, Route
 from tweeterpy.schemas.constants import OperationType
-from tweeterpy.utils.casing import CasingType, transform_casing
+from tweeterpy.utils.casing import Casing, CasingType
 
 
 class APIDefinition:
-    def __init__(self, operations: Optional[Dict[str, Any]] = None, features_preset: Optional[FeatureSwitches] = None, features: Optional[FeatureSwitches] = None):
-        self.operations = operations or {}
-        self.features_preset = features_preset if isinstance(
-            features_preset, FeatureSwitches) else FeatureSwitches(data=FEATURE_SWITCHES_PRESET.copy())
-        self.features = features if isinstance(
-            features, FeatureSwitches) else FeatureSwitches()
+    DEFAULT_CASING = CasingType.PASCAL
 
-    def get_operation_data(self, operation_name: str) -> Dict[str, Any]:
-        normalized_name = transform_casing(
-            text=operation_name, target=CasingType.UPPER_SNAKE)
-        if operation_name in self.operations:
-            return self.operations.get(normalized_name, {})
+    def __init__(self, operations: Optional[Dict[str, Any]] = None, features: Optional[FeatureSwitches] = None):
+        self._operations: Dict[str, Any] = {}
+        self.operations = operations
+        self.features_preset = FeatureSwitches(data=XFeatures().to_dict())
+        self.features = features if isinstance(features, FeatureSwitches) else FeatureSwitches(
+            data=features) if features else FeatureSwitches()
 
-        operation_template = getattr(XOperations, operation_name, None)
-        if isinstance(operation_template, Operation):
-            return operation_template.model_dump()
+    def _normalize_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Converts all keys in a dictionary to the internal standard casing."""
+        return {Casing.transform(text=key, case_type=self.DEFAULT_CASING): value for key, value in data.items()}
 
-        raise KeyError(
-            f"Operation '{operation_name}' not found in live definition or XOperations presets. "
-            f"Please ensure the operation name is correct or try running the APIUpdater."
-        )
+    @property
+    def operations(self) -> Dict[str, Any]:
+        return self._operations
 
-    def get_features(self, operation_name: str) -> Dict[str, Any]:
-        operation_data = self.get_operation_data(operation_name=operation_name)
-        metadata = operation_data.get("metadata", {})
-        raw_features = metadata.get(
-            "featureSwitches") or metadata.get("feature_switches", [])
+    @operations.setter
+    def operations(self, operations: Optional[Dict[str, Any]]):
+        if not isinstance(operations, dict):
+            self._operations = {}
+            return
 
-        if raw_features:
-            if isinstance(raw_features, list):
-                return {feature: self.features.get(name=feature) for feature in raw_features}
-
-            if isinstance(raw_features, dict):
-                return raw_features
-
-        return self.features_preset.switches
-
-    def get_toggles(self, operation_name: str) -> Dict[str, Any]:
-        operation_data = self.get_operation_data(operation_name=operation_name)
-        metadata = operation_data.get("metadata", {})
-        fields = metadata.get("fieldToggles") or metadata.get(
-            "field_toggles", [])
-
-        if fields and isinstance(fields, list):
-            return {field: True for field in fields}
-
-        return fields if isinstance(fields, dict) else {}
+        self._operations = self._normalize_data(data=operations)
 
     def build_metadata(self, operation_name: str) -> Metadata:
         return Metadata(
@@ -98,6 +74,58 @@ class APIDefinition:
             variables=variables,
             metadata=self.build_metadata(operation_name=operation_name)
         )
+
+    def get_features(self, operation_name: str, default: Optional[bool] = None) -> Dict[str, Any]:
+        operation_data = self.get_operation_data(operation_name=operation_name)
+        metadata = operation_data.get("metadata", {})
+        raw_features = metadata.get(
+            "featureSwitches") or metadata.get("feature_switches", [])
+
+        if raw_features:
+            if isinstance(raw_features, list):
+                return self.features.get(name=raw_features, default=default)
+
+            if isinstance(raw_features, dict):
+                return raw_features
+
+        return self.features_preset.switches
+
+    def get_operation_data(self, operation_name: str) -> Dict[str, Any]:
+        normalized_operation_name = Casing.transform(
+            text=operation_name, case_type=self.DEFAULT_CASING)
+        if normalized_operation_name in self.operations:
+            return self.operations.get(normalized_operation_name, {})
+
+        operation_template = getattr(
+            XOperations, normalized_operation_name, None)
+        if isinstance(operation_template, Operation):
+            return operation_template.model_dump()
+
+        raise KeyError(
+            f"Operation '{operation_name}' not found in live definition or XOperations presets. "
+            f"Please ensure the operation name is correct or try running the APIUpdater."
+        )
+
+    def get_toggles(self, operation_name: str) -> Dict[str, Any]:
+        operation_data = self.get_operation_data(operation_name=operation_name)
+        metadata = operation_data.get("metadata", {})
+        fields = metadata.get("fieldToggles") or metadata.get(
+            "field_toggles", [])
+
+        if fields and isinstance(fields, list):
+            return {field: True for field in fields}
+
+        return fields if isinstance(fields, dict) else {}
+
+    def update(self, operations: Optional[Dict[str, Any]] = None, features: Optional[Dict[str, Any]] = None):
+        """Updates existing definitions for top-level keys (features, operations)."""
+        if isinstance(operations, dict):
+            self._operations.update(self._normalize_data(data=operations))
+
+        if isinstance(features, dict):
+            self.features.update(data=features)
+
+        return self
 
 
 if __name__ == "__main__":
