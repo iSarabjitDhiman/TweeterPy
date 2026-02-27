@@ -69,9 +69,6 @@ class TweeterPySession(ABC):
             raise TypeError(
                 "_process_response received a coroutine. Await the request call.")
 
-        if hasattr(response, "raise_for_status") and callable(response.raise_for_status):
-            response.raise_for_status()
-
         if response_type is ResponseType.RAW or not response:
             return response
 

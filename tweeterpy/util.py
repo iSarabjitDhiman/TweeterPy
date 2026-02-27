@@ -25,22 +25,6 @@ class RateLimitError(Exception):
         super().__init__(message)
 
 
-def check_for_errors(response):
-    if not isinstance(response, dict):
-        return response
-
-    errors = response.get("errors", [])
-    if "error" in response:
-        errors.append(response.get("error"))
-
-    if errors and not response.get("data"):
-        error_message = "\n".join([f"Error code {error.get('code')} - {error.get('message')}" if error.get(
-            'code') else error.get('message') for error in errors if error])
-        raise Exception(error_message)
-
-    return response
-
-
 def check_api_rate_limits(response):
     # fmt:off - Code fomatting turned off
     try:

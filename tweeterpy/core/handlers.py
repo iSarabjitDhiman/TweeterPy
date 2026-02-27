@@ -140,6 +140,40 @@ class RequestHandlers(BaseHandler):
 
 class ResponseHandlers(BaseHandler):
     @staticmethod
+    def api_error_validator(response: Any, **context):
+        """
+        Audits the response for HTTP-level and Twitter API-level errors.
+        Raises an exception if the API returns an error without data.
+        """
+        if hasattr(response, "raise_for_status") and callable(response.raise_for_status):
+            response.raise_for_status()
+
+        if not is_json_response(response=response):
+            return response
+
+        data = parse_json(data=response)
+        if not isinstance(data, dict):
+            return response
+
+        errors = data.get("errors", [])
+        if "error" in data:
+            errors.append(data.get("error"))
+
+        # if errors and not data.get("data", None):
+        if errors:
+            messages = []
+            for error in errors:
+                code = error.get('code', None)
+                message = error.get('message', None)
+                messages.append(
+                    f"Error code {code} - {message}" if code else message)
+
+            error_message = "\n".join(messages)
+            logger.error(f"Twitter API Error: {error_message}")
+
+        return response
+
+    @staticmethod
     def twitter_cookie_injector_hook(response: Any, session: TweeterPySession, **context):
         """Extracts document.cookie calls from Twitter's HTML and manually sets them in the session."""
         if is_json_response(response=response):
