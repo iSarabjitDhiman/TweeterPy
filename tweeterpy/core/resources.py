@@ -98,6 +98,10 @@ class RegexPatterns:
         r"\+\s*\"a\.js\""
         r")"
     )
+    DOCUMENT_COOKIE = re.compile(
+        r'document\.cookie\s*=\s*"(?P<cookie_content>.*?)"',
+        re.DOTALL
+    )
     FEATURE_SWITCH_OBJECT = re.compile(
         r'"featureSwitch":\s*(?P<feature_switch>\{'
         r'.*?'
