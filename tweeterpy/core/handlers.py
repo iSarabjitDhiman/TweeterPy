@@ -10,7 +10,8 @@ from tweeterpy.config import TweeterPyConfig
 from tweeterpy.constants import LOGGING_CONFIG
 from tweeterpy.core.abstractions import TweeterPySession
 from tweeterpy.core.resources import RegexPatterns, XUrls
-from tweeterpy.utils.text import to_string
+from tweeterpy.utils.misc import is_json_response
+from tweeterpy.utils.text import to_string, parse_json
 
 
 logging.config.dictConfig(LOGGING_CONFIG)
@@ -141,10 +142,7 @@ class ResponseHandlers(BaseHandler):
     @staticmethod
     def twitter_cookie_injector_hook(response: Any, session: TweeterPySession, **context):
         """Extracts document.cookie calls from Twitter's HTML and manually sets them in the session."""
-        response_headers = getattr(response, "headers", {})
-        content_type = str(response_headers.get(
-            "Content-Type", response_headers.get("content-type", ""))).lower()
-        if "json" in content_type:
+        if is_json_response(response=response):
             return response
 
         content = to_string(data=response)
@@ -172,9 +170,12 @@ class ResponseHandlers(BaseHandler):
     @staticmethod
     def twitter_guest_token_handler(url: str, response: Any, session: TweeterPySession, **context):
         """Extracts guest_token from JSON responses like activate.json."""
+        if not is_json_response(response=response):
+            return response
+
         if XUrls.GUEST_TOKEN in url:
             try:
-                data = response.json() if hasattr(response, "json") else response
+                data = parse_json(data=response)
                 if isinstance(data, dict) and data.get("guest_token", None):
                     ResponseHandlers.set_cookie(session=session,
                                                 name="gt",

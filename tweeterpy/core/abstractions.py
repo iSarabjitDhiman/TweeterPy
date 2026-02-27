@@ -1,12 +1,12 @@
 import inspect
-import json
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import cast, get_args, Any, Awaitable, Callable, Dict, List, Literal, Optional, Union
 
 from x_client_transaction import ClientTransaction
 
-from tweeterpy.utils.text import parse_html, to_string
+from tweeterpy.utils.misc import is_json_response
+from tweeterpy.utils.text import parse_html, parse_json, to_string
 
 
 class ResponseType(Enum):
@@ -76,15 +76,11 @@ class TweeterPySession(ABC):
             return response
 
         if response_type is ResponseType.AUTO:
-            headers = getattr(response, "headers", {})
-            content_type = str(headers.get(
-                "Content-Type", headers.get("content-type", ""))).lower()
-            response_type = ResponseType.JSON if "json" in content_type else ResponseType.TEXT
+            response_type = ResponseType.JSON if is_json_response(
+                response=response) else ResponseType.TEXT
 
         if response_type is ResponseType.JSON:
-            if hasattr(response, "json") and callable(response.json):
-                return response.json()
-            return json.loads(to_string(response))
+            parse_json(data=response)
 
         if response_type is ResponseType.HTML:
             return parse_html(data=response)

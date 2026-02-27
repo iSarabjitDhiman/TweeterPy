@@ -1,3 +1,4 @@
+import json
 import re
 from typing import Any, List, Optional
 
@@ -32,9 +33,7 @@ def to_string(data: Any) -> str:
 
 
 def parse_html(data: Any, parser: Optional[str] = None) -> BeautifulSoup:
-    """
-    Parses input data into a BeautifulSoup object for DOM manipulation.
-    """
+    """Parses input data into a BeautifulSoup object for DOM manipulation."""
     if isinstance(data, BeautifulSoup):
         return data
 
@@ -43,6 +42,21 @@ def parse_html(data: Any, parser: Optional[str] = None) -> BeautifulSoup:
 
     html_str = to_string(data=data)
     return BeautifulSoup(markup=html_str, features="html.parser")
+
+
+def parse_json(data: Any, default: Optional[Any] = None) -> Any:
+    """Safely converts string/bytes/response to a dictionary."""
+    if data is None:
+        return default
+
+    if isinstance(data, dict):
+        return data
+
+    if hasattr(data, "json") and callable(data.json):
+        return data.json()
+
+    str_data = to_string(data)
+    return json.loads(str_data)
 
 
 if __name__ == "__main__":
