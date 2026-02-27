@@ -1,10 +1,21 @@
 import inspect
+import json
 from abc import ABC, abstractmethod
-from typing import Any, Awaitable, Callable, Dict, List, Literal, Optional, Union
-from urllib.parse import urlparse
+from enum import Enum
+from typing import cast, get_args, Any, Awaitable, Callable, Dict, List, Literal, Optional, Union
 
-from bs4 import BeautifulSoup
 from x_client_transaction import ClientTransaction
+
+from tweeterpy.utils.text import parse_html, to_string
+
+
+class ResponseType(Enum):
+    AUTO = "auto"
+    HTML = "html"
+    JSON = "json"
+    RAW = "raw"
+    TEXT = "text"
+
 
 HttpMethod = Literal["GET", "POST", "PUT",
                      "DELETE", "OPTIONS", "HEAD", "PATCH", "TRACE"]
@@ -43,36 +54,72 @@ class TweeterPySession(ABC):
     def headers(self) -> Any:
         raise NotImplementedError
 
+    @abstractmethod
+    def update_headers(self, headers: Dict[str, str]) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _send(self, url: str, method: HttpMethod, **kwargs) -> Any:
+        raise NotImplementedError
+
+    def _process_response(self, response: Any, response_type: ResponseType) -> Any:
+        if inspect.iscoroutine(response):
+            raise TypeError(
+                "_process_response received a coroutine. "
+                "Ensure you are awaiting the session request call."
+            )
+
+        if hasattr(response, "raise_for_status") and callable(response.raise_for_status):
+            response.raise_for_status()
+
+        if response_type is ResponseType.RAW or not response:
+            return response
+
+        if response_type is ResponseType.AUTO:
+            headers = getattr(response, "headers", {})
+            content_type = str(headers.get(
+                "Content-Type", headers.get("content-type", ""))).lower()
+            response_type = ResponseType.JSON if "json" in content_type else ResponseType.TEXT
+
+        if response_type is ResponseType.JSON:
+            if hasattr(response, "json") and callable(response.json):
+                return response.json()
+            return json.loads(to_string(response))
+
+        if response_type is ResponseType.HTML:
+            return parse_html(data=response)
+
+        return to_string(data=response)
+
     def _run_request_hooks(self, hooks: List[RequestHook], url: str, method: HttpMethod, **kwargs: Any) -> Dict[str, Any]:
         """Runs pre-request hooks to prepare the execution context."""
+        context = {"url": url, "method": method, "session": self, **kwargs}
+
         for hook in hooks:
             if inspect.iscoroutinefunction(hook):
                 raise RuntimeError(
                     f"Cannot run async hook {hook.__name__} in a synchronous session.")
 
-            result = hook(url=url, method=method, **kwargs)
+            result = hook(**context)
             if isinstance(result, dict):
-                url = result.get("url", url)
-                method = result.get("method", method)
-                # Filter out url/method and update the main kwargs
-                kwargs.update({k: v for k, v in result.items()
-                              if k not in ["url", "method"]})
+                context.update(result)
 
-        return {"url": url, "method": method, **kwargs}
+        context.pop("session", None)
+        return context
 
     async def _run_request_hooks_async(self, hooks: List[RequestHook], url: str, method: HttpMethod, **kwargs: Any) -> Dict[str, Any]:
+        context = {"url": url, "method": method, "session": self, **kwargs}
+
         for hook in hooks:
             result = hook(url=url, method=method, **kwargs)
             if inspect.isawaitable(result):
                 result = await result
 
             if isinstance(result, dict):
-                url = result.get("url", url)
-                method = result.get("method", method)
-                kwargs.update({k: v for k, v in result.items()
-                              if k not in ["url", "method"]})
+                context.update(result)
 
-        return {"url": url, "method": method, **kwargs}
+        context.pop("session", None)
+        return context
 
     def _run_response_hooks(self, hooks: List[ResponseHook], response: Any, **context: Any) -> Any:
         """Runs post-request hooks to transform the response object."""
@@ -100,61 +147,54 @@ class TweeterPySession(ABC):
                 response = result
         return response
 
-    @abstractmethod
-    def _send(self, url: str, method: HttpMethod, **kwargs) -> Any:
-        raise NotImplementedError
-
-    @abstractmethod
-    def update_headers(self, headers: Dict[str, str]) -> None:
-        raise NotImplementedError
-
-    def _prepare_headers(self, url: str, method: HttpMethod, headers: Optional[Dict[str, str]] = None) -> Dict[str, str]:
-        headers = headers if isinstance(headers, dict) else {}
-        if isinstance(self.client_transaction, ClientTransaction):
-            transaction_id = self.client_transaction.generate_transaction_id(
-                method=method, path=urlparse(url).path)
-            headers["x-client-transaction-id"] = transaction_id
-        return headers
-
-    def _process_response(self, response: Any) -> Union[BeautifulSoup, Dict[str, Any]]:
-        headers = response.headers
-        content_type = str(headers.get(
-            "Content-Type", headers.get("content-type", ""))).lower()
-        if "json" in content_type:
-            return response.json()
-
-        return BeautifulSoup(response.content, "html.parser")
-
-    def _sync_request(self, url: str, method: HttpMethod, **kwargs) -> Union[BeautifulSoup, Dict[str, Any]]:
+    def _sync_request(self, url: str, method: HttpMethod, response_type: ResponseType, **kwargs):
         context = self._run_request_hooks(
-            hooks=self.request_hooks, url=url, method=method, **kwargs)
+            hooks=self.request_hooks, url=url, method=method, session=self, **kwargs)
 
         response = self._send(**context)
-
         response = self._run_response_hooks(
-            hooks=self.response_hooks, response=response, **context)
-        return self._process_response(response=response)
+            hooks=self.response_hooks, response=response, session=self, **context)
+        return self._process_response(response=response, response_type=response_type)
 
-    async def _async_request(self, url: str, method: HttpMethod, **kwargs) -> Union[BeautifulSoup, Dict[str, Any]]:
-        context = await self._run_request_hooks_async(hooks=self.request_hooks, url=url, method=method, **kwargs)
+    async def _async_request(self, url: str, method: HttpMethod, response_type: ResponseType, **kwargs) -> Any:
+        context = await self._run_request_hooks_async(hooks=self.request_hooks, url=url, method=method, session=self, **kwargs)
 
         response = await self._send(**context)
+        response = await self._run_response_hooks_async(hooks=self.response_hooks, response=response, session=self, **context)
+        return self._process_response(response=response, response_type=response_type)
 
-        response = await self._run_response_hooks_async(hooks=self.response_hooks, response=response, **context)
-        return self._process_response(response=response)
+    def _validate_method(self, method: Union[HttpMethod, str]) -> HttpMethod:
+        upper_method = method.upper()
+        valid_methods = get_args(HttpMethod)
+        if upper_method not in valid_methods:
+            raise ValueError(
+                f"Invalid HTTP Method: '{upper_method}'. Must be one of {valid_methods}")
+        return cast(HttpMethod, upper_method)
 
-    def request(self, url: str, method: Optional[HttpMethod] = None, **kwargs):
-        if method is None:
-            method = "GET"
-        headers = self._prepare_headers(
-            url=url, method=method, headers=kwargs.pop("headers", {}))
-        kwargs["headers"] = headers
-
+    def request(self, url: str, method: Union[HttpMethod, str] = "GET", response_type: ResponseType = ResponseType.AUTO, **kwargs):
+        """Automated routing based on session type."""
+        method = self._validate_method(method=method)
         if self.is_async:
-            return self._async_request(url=url, method=method, **kwargs)
+            return self._async_request(url=url, method=method, response_type=response_type, **kwargs)
 
-        return self._sync_request(url=url, method=method, **kwargs)
+        return self._sync_request(url=url, method=method, response_type=response_type, **kwargs)
 
+    async def request_async(self, url: str, method: Union[HttpMethod, str] = "GET", response_type: ResponseType = ResponseType.AUTO, **kwargs):
+        """Strictly asynchronous request."""
+        if not self.is_async:
+            raise RuntimeError(
+                "Called .request_async() on a Sync Session. Use .request_sync() instead.")
+        return self._async_request(url=url, method=self._validate_method(method=method), response_type=response_type, **kwargs)
+
+    def request_sync(self, url: str, method: Union[HttpMethod, str] = "GET", response_type: ResponseType = ResponseType.AUTO, **kwargs):
+        """Strictly synchronous request."""
+        if self.is_async:
+            raise RuntimeError(
+                "Called .request_sync() on an AsyncSession. Use await .request_async() instead.")
+        return self._sync_request(url=url, method=self._validate_method(method=method), response_type=response_type, **kwargs)
+
+    def request_html(self, url: str, method: Union[HttpMethod, str] = "GET", **kwargs):
+        return self.request(url=url, method=method, response_type=ResponseType.HTML, **kwargs)
 
 # INTERFACES
 
