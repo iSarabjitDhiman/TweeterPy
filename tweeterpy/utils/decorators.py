@@ -2,8 +2,7 @@ import inspect
 from functools import wraps
 from typing import Callable, Any
 
-
-from tweeterpy.utils.text import tokenize_string, to_string
+from tweeterpy.utils.text import parse_html, tokenize_string, to_string
 
 
 def argument_transform(arg_name: str, transform_func: Callable[[Any], Any]):
@@ -25,9 +24,14 @@ def argument_transform(arg_name: str, transform_func: Callable[[Any], Any]):
     return decorator
 
 
-def ensure_str(arg_name: str = "text"):
+def ensure_str(arg_name: str):
     """Ensures the argument is a string (handles bytes/None)."""
     return argument_transform(arg_name, to_string)
+
+
+def ensure_html(arg_name: str):
+    """Ensures the argument is BeautifulSoup(html) object."""
+    return argument_transform(arg_name, parse_html)
 
 
 def process_casing(arg_name: str = "text"):
