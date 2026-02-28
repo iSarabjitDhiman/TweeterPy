@@ -328,7 +328,7 @@ class TweeterPyAsync(TweeterPyClient):
 
         super().__init__(session, definitions)
 
-    async def initialize(self, deep_scan: bool = False):
+    async def initialize(self, deep_scan: bool = False, max_concurrency: int = 10):
         """Prepares the session by fetching required tokens and metadata."""
         home_page = await self.session.request_html(url=XUrls.BASE, method="GET")
         if not isinstance(home_page, BeautifulSoup):
@@ -340,7 +340,9 @@ class TweeterPyAsync(TweeterPyClient):
 
         # Dynamic API Definitions Update
         new_definitions = await self.updater.run_async(
-            response=str(home_page), deep_scan=deep_scan
+            response=str(home_page),
+            deep_scan=deep_scan,
+            max_concurrency=max_concurrency,
         )
 
         # ClientTransaction Bundle

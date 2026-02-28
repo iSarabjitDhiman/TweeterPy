@@ -59,14 +59,17 @@ class APIUpdater:
 
         return feature_switches, bundle_queue
 
-    async def fetch_bundle(self, bundle_name: str, bundle_url: str):
-        try:
-            logger.debug(f"Processing Bundle: {bundle_name} - {bundle_url}")
+    async def fetch_bundle(
+        self, bundle_name: str, bundle_url: str, semaphore: asyncio.Semaphore
+    ):
+        async with semaphore:
+            try:
+                logger.debug(f"Processing Bundle: {bundle_name} - {bundle_url}")
 
-            js_content = await self.session.request(url=bundle_url, method="GET")
-            return self.parser.parse_operations(js_content=js_content)
-        except Exception as error:
-            logger.exception(f"Error processing {bundle_name}: {error}")
+                js_content = await self.session.request(url=bundle_url, method="GET")
+                return self.parser.parse_operations(js_content=js_content)
+            except Exception as error:
+                logger.exception(f"Error processing {bundle_name}: {error}")
 
     def run(self, response: str, deep_scan: bool = False):
         api_definitions = {"features": {}, "operations": {}}
@@ -95,8 +98,11 @@ class APIUpdater:
 
         return api_definitions
 
-    async def run_async(self, response: str, deep_scan: bool = False):
+    async def run_async(
+        self, response: str, deep_scan: bool = False, max_concurrency: int = 10
+    ):
         api_definitions = {"features": {}, "operations": {}}
+        semaphore = asyncio.Semaphore(max_concurrency)
         try:
             feature_switches, bundle_queue = self._prepare_queue(
                 response=response, deep_scan=deep_scan
@@ -107,7 +113,9 @@ class APIUpdater:
 
             # Create all tasks for concurrent execution
             tasks = [
-                self.fetch_bundle(bundle_name=bundle_name, bundle_url=bundle_url)
+                self.fetch_bundle(
+                    bundle_name=bundle_name, bundle_url=bundle_url, semaphore=semaphore
+                )
                 for bundle_name, bundle_url in bundle_queue.items()
             ]
             results = await asyncio.gather(*tasks, return_exceptions=True)
