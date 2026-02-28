@@ -127,7 +127,7 @@ class TweeterPySession(ABC):
         context = {"url": url, "method": method, "session": self, **kwargs}
 
         for hook in hooks:
-            result = hook(url=url, method=method, **kwargs)
+            result = hook(**context)
             if inspect.isawaitable(result):
                 result = await result
 
