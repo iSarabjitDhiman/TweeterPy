@@ -1,32 +1,36 @@
-import logging.config
 import random
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Type, Union
 
 from bs4 import BeautifulSoup
 from x_client_transaction import ClientTransaction
 
-from tweeterpy.constants import LOGGING_CONFIG
+from tweeterpy.core.abstractions import TweeterPyLogger
 from tweeterpy.core.definition import APIDefinition
 from tweeterpy.core.migration import XMigrationHandler
 from tweeterpy.core.resources import XOperations, XUrls
 from tweeterpy.core.session import AsyncSession, Session, TweeterPySession
+from tweeterpy.log import Logger, StandardLogger
 from tweeterpy.schemas import Operation
 from tweeterpy.services.parser import APIParser
 from tweeterpy.services.updater import APIUpdater
 from tweeterpy.utils.text import parse_html
 
-logging.config.dictConfig(LOGGING_CONFIG)
-logger = logging.getLogger(__name__)
-
 
 class TweeterPyClient:
     def __init__(
-        self, session: TweeterPySession, definitions: Optional[APIDefinition] = None
+        self,
+        session: TweeterPySession,
+        logger: Optional[Union[TweeterPyLogger, Type[TweeterPyLogger]]] = None,
+        definitions: Optional[APIDefinition] = None,
     ) -> None:
-        self.session = session
-        self.parser = APIParser()
-        self.updater = APIUpdater(session=session)
+        if logger is None:
+            logger = StandardLogger
+
         self.api_definitions = definitions or APIDefinition()
+        self.logger = Logger.get_logger(logger=logger, name=__name__)
+        self.session = session
+        self.parser = APIParser(logger=logger)
+        self.updater = APIUpdater(logger=logger, session=session)
 
     @property
     def is_logged_in(self) -> bool:
@@ -66,7 +70,7 @@ class TweeterPyClient:
                 ondemand_file_response=ondemand_file_response,
             )
         except Exception as error:
-            logger.warning(f"Could not initialize ClientTransaction: {error}")
+            self.logger.warning(f"Could not initialize ClientTransaction: {error}")
 
     def execute(
         self,
@@ -276,13 +280,14 @@ class TweeterPyClient:
 class TweeterPy(TweeterPyClient):
     def __init__(
         self,
+        logger: Optional[Union[TweeterPyLogger, Type[TweeterPyLogger]]] = None,
         session: Optional[TweeterPySession] = None,
         definitions: Optional[APIDefinition] = None,
     ) -> None:
         if session is None:
             session = Session()
 
-        super().__init__(session=session, definitions=definitions)
+        super().__init__(session=session, definitions=definitions, logger=logger)
 
     def initialize(self, deep_scan: bool = False):
         """Prepares the session by fetching required tokens and metadata."""
@@ -314,19 +319,20 @@ class TweeterPy(TweeterPyClient):
         # guest token (x-guest-token / gt)
         self.session.request(url=XUrls.GUEST_TOKEN, method="POST")
 
-        logger.info("TweeterPy Client initialized successfully.")
+        self.logger.info("TweeterPy Client initialized successfully.")
 
 
 class TweeterPyAsync(TweeterPyClient):
     def __init__(
         self,
+        logger: Optional[Union[TweeterPyLogger, Type[TweeterPyLogger]]] = None,
         session: Optional[TweeterPySession] = None,
         definitions: Optional[APIDefinition] = None,
     ) -> None:
         if session is None:
             session = AsyncSession()
 
-        super().__init__(session, definitions)
+        super().__init__(session=session, definitions=definitions, logger=logger)
 
     async def initialize(self, deep_scan: bool = False, max_concurrency: int = 10):
         """Prepares the session by fetching required tokens and metadata."""
@@ -362,7 +368,7 @@ class TweeterPyAsync(TweeterPyClient):
         # guest token (x-guest-token / gt)
         await self.session.request(url=XUrls.GUEST_TOKEN, method="POST")
 
-        logger.info("TweeterPy Client initialized successfully.")
+        self.logger.info("TweeterPy Client initialized successfully.")
 
 
 if __name__ == "__main__":

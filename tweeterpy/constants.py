@@ -15,7 +15,7 @@ API_TMP_FILE = f"{PACKAGE_NAME}.json"
 DEFAULT_SESSION_DIRECTORY = f"{PACKAGE_NAME} sessions"
 
 # File name to save logs.
-LOG_FILE_NAME = "tweeterpy.log"
+LOG_FILE_NAME = f"{PACKAGE_NAME}.log"
 
 # Logging level : "DEBUG","INFO","WARNING","ERROR","CRITICAL"
 # If None, "INFO" will be used for Stream/Console logs and "DEBUG" will be used for file logs.

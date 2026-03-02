@@ -1,14 +1,11 @@
 import json
-import logging.config
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Type, Union
 
-from tweeterpy.constants import LOGGING_CONFIG
+from tweeterpy.core.abstractions import TweeterPyLogger
 from tweeterpy.core.resources import RegexPatterns, XUrls
+from tweeterpy.log import Logger
 from tweeterpy.utils.decorators import ensure_str
 from tweeterpy.utils.text import normalize_js_object
-
-logging.config.dictConfig(LOGGING_CONFIG)
-logger = logging.getLogger(__name__)
 
 
 class APIParser:
@@ -33,14 +30,16 @@ class APIParser:
         "react-syntax",
     )
 
-    def __init__(self) -> None:
-        pass
+    def __init__(
+        self, logger: Optional[Union[TweeterPyLogger, Type[TweeterPyLogger]]] = None
+    ) -> None:
+        self.logger = Logger.get_logger(logger=logger, name=__name__)
 
     def load_json(self, data: str, raise_error: bool = False) -> Optional[Dict]:
         try:
             return json.loads(data)
         except (json.JSONDecodeError, TypeError) as error:
-            logger.error(error)
+            self.logger.error(error)
             if raise_error:
                 raise error
             return None

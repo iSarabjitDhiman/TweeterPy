@@ -1,18 +1,20 @@
 import asyncio
-import logging.config
+from typing import Optional, Type, Union
 
-from tweeterpy.constants import LOGGING_CONFIG
-from tweeterpy.core.abstractions import TweeterPySession
+from tweeterpy.core.abstractions import TweeterPyLogger, TweeterPySession
+from tweeterpy.log import Logger
 from tweeterpy.services.parser import APIParser
-
-logging.config.dictConfig(LOGGING_CONFIG)
-logger = logging.getLogger(__name__)
 
 
 class APIUpdater:
-    def __init__(self, session: TweeterPySession) -> None:
+    def __init__(
+        self,
+        session: TweeterPySession,
+        logger: Optional[Union[TweeterPyLogger, Type[TweeterPyLogger]]] = None,
+    ) -> None:
         self.session = session
-        self.parser = APIParser()
+        self.parser = APIParser(logger=logger)
+        self.logger = Logger.get_logger(logger=logger, name=__name__)
 
     def _prepare_queue(self, response: str, deep_scan: bool) -> tuple[dict, dict]:
         """Shared logic to extract features and build the URL queue."""
@@ -64,12 +66,12 @@ class APIUpdater:
     ):
         async with semaphore:
             try:
-                logger.debug(f"Processing Bundle: {bundle_name} - {bundle_url}")
+                self.logger.debug(f"Processing Bundle: {bundle_name} - {bundle_url}")
 
                 js_content = await self.session.request(url=bundle_url, method="GET")
                 return self.parser.parse_operations(js_content=js_content)
             except Exception as error:
-                logger.exception(f"Error processing {bundle_name}: {error}")
+                self.logger.exception(f"Error processing {bundle_name}: {error}")
 
     def run(self, response: str, deep_scan: bool = False):
         api_definitions = {"features": {}, "operations": {}}
@@ -79,22 +81,24 @@ class APIUpdater:
             )
             api_definitions["features"] = feature_switches
 
-            logger.info(
+            self.logger.info(
                 f"Processing {len(bundle_queue)} bundle/s to extract API Operations..."
             )
 
             for bundle_name, bundle_url in bundle_queue.items():
                 try:
-                    logger.debug(f"Processing Bundle: {bundle_name} - {bundle_url}")
+                    self.logger.debug(
+                        f"Processing Bundle: {bundle_name} - {bundle_url}"
+                    )
                     js_content = self.session.request(url=bundle_url, method="GET")
                     operations = self.parser.parse_operations(js_content=js_content)
                     if operations:
                         api_definitions["operations"].update(operations)
                 except Exception as error:
-                    logger.warning(f"Error processing {bundle_name}: {error}")
+                    self.logger.warning(f"Error processing {bundle_name}: {error}")
 
         except Exception as error:
-            logger.error(f"Error during update: {error}")
+            self.logger.error(f"Error during update: {error}")
 
         return api_definitions
 
@@ -109,7 +113,7 @@ class APIUpdater:
             )
             api_definitions["features"] = feature_switches
 
-            logger.info(f"Processing {len(bundle_queue)} bundle/s concurrently...")
+            self.logger.info(f"Processing {len(bundle_queue)} bundle/s concurrently...")
 
             # Create all tasks for concurrent execution
             tasks = [
@@ -126,7 +130,7 @@ class APIUpdater:
                 api_definitions["operations"].update(operations)
 
         except Exception as error:
-            logger.error(f"Error during update: {error}")
+            self.logger.error(f"Error during update: {error}")
         return api_definitions
 
 
