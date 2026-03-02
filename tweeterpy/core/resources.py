@@ -1,7 +1,9 @@
 import re
 from dataclasses import asdict, dataclass
+from typing import Any, Dict
 
 from tweeterpy.schemas import Endpoint, Operation
+from tweeterpy.schemas.metadata import FeatureSwitches
 
 
 @dataclass
@@ -39,6 +41,46 @@ class XFeatures:
 
     def to_dict(self):
         return asdict(self)
+
+
+class XFieldToggleRules:
+    # Toggle -> Feature Switch Mapping
+    MAPPING = {
+        "withArticlePlainText": "responsive_web_twitter_article_plain_text_enabled",
+        "withArticleRichContentState": "responsive_web_twitter_article_seed_tweet_detail_enabled",
+        "withAuxiliaryUserLabels": "blue_business_multi_affiliates_ui_enabled",
+        "withDisallowedReplyControls": "disallowed_reply_controls_callout_enabled",
+        "withGrokAnalyze": "subscriptions_inapp_grok_analyze",
+    }
+
+    DISABLED_FIELDS = [
+        "withArticlePlainText",
+    ]
+
+    @classmethod
+    def resolve(
+        cls,
+        field_name: str,
+        feature_switches: FeatureSwitches,
+        session_info: Dict[str, Any],
+        default: bool = False,
+    ) -> bool:
+        if field_name in cls.DISABLED_FIELDS:
+            return False
+
+        if field_name == "isDelegate":
+            return bool(session_info.get("actAsUserId", default))
+
+        if field_name == "withPayments":
+            is_enrolled = bool(session_info.get("xpaymentsEnrolled", default))
+            can_access = bool(session_info.get("canAccessPayments", default))
+            return is_enrolled and can_access
+
+        switch_name = cls.MAPPING.get(field_name)
+        if switch_name:
+            return feature_switches.is_true(name=switch_name)
+
+        return default
 
 
 class XOperations:

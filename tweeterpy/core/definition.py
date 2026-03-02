@@ -1,6 +1,6 @@
 from typing import Any, Dict, Optional
 
-from tweeterpy.core.resources import XFeatures, XOperations, XUrls
+from tweeterpy.core.resources import XFeatures, XFieldToggleRules, XOperations, XUrls
 from tweeterpy.schemas import (
     Endpoint,
     FeatureSwitches,
@@ -20,17 +20,18 @@ class APIDefinition:
         self,
         operations: Optional[Dict[str, Any]] = None,
         features: Optional[FeatureSwitches] = None,
+        session_info: Optional[Dict[str, Any]] = None,
     ):
         self._operations: Dict[str, Any] = {}
-        self.operations = operations
-        self.features_preset = FeatureSwitches(data=XFeatures().to_dict())
         self.features = (
             features
             if isinstance(features, FeatureSwitches)
             else FeatureSwitches(data=features)
             if features
-            else FeatureSwitches()
+            else FeatureSwitches(data=XFeatures().to_dict())
         )
+        self.operations = operations
+        self.session_info = session_info or {}
 
     def _normalize_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Converts all keys in a dictionary to the internal standard casing."""
@@ -128,7 +129,7 @@ class APIDefinition:
             if isinstance(raw_features, dict):
                 return raw_features
 
-        return self.features_preset.switches
+        return self.features.switches
 
     def get_operation_data(self, operation_name: str) -> Dict[str, Any]:
         normalized_operation_name = Casing.transform(
@@ -152,7 +153,14 @@ class APIDefinition:
         fields = metadata.get("fieldToggles") or metadata.get("field_toggles", [])
 
         if fields and isinstance(fields, list):
-            return {field: True for field in fields}
+            return {
+                field: XFieldToggleRules.resolve(
+                    field_name=field,
+                    feature_switches=self.features,
+                    session_info=self.session_info,
+                )
+                for field in fields
+            }
 
         return fields if isinstance(fields, dict) else {}
 
@@ -160,13 +168,18 @@ class APIDefinition:
         self,
         operations: Optional[Dict[str, Any]] = None,
         features: Optional[Dict[str, Any]] = None,
+        session_info: Optional[Dict[str, Any]] = None,
     ):
-        """Updates existing definitions for top-level keys (features, operations)."""
-        if isinstance(operations, dict):
-            self._operations.update(self._normalize_data(data=operations))
+        """Updates existing definitions for top-level keys (features, operations, session_info)."""
 
         if isinstance(features, dict):
             self.features.update(data=features)
+
+        if isinstance(operations, dict):
+            self._operations.update(self._normalize_data(data=operations))
+
+        if isinstance(session_info, dict):
+            self.session_info.update(session_info)
 
         return self
 

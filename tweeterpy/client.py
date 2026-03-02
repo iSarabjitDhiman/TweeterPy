@@ -54,6 +54,7 @@ class TweeterPyClient:
         home_page: Union[BeautifulSoup, Any],
         ondemand_file_response: str,
         new_definitions: Dict[str, Any],
+        session_info: Optional[Dict[str, Any]] = None,
     ):
         """Shared logic to update state from fetched data."""
 
@@ -61,6 +62,7 @@ class TweeterPyClient:
         self.api_definitions.update(
             features=new_definitions.get("features", {}),
             operations=new_definitions.get("operations", {}),
+            session_info=session_info,
         )
 
         # Initialize ClientTransaction for x-client-transaction-id generation
@@ -71,6 +73,11 @@ class TweeterPyClient:
             )
         except Exception as error:
             self.logger.warning(f"Could not initialize ClientTransaction: {error}")
+
+    def _get_session_info(self, home_page: BeautifulSoup):
+        initial_state = self.parser.parse_initial_state(html_content=home_page)
+        if isinstance(initial_state, dict):
+            return initial_state.get("session", {})
 
     def execute(
         self,
@@ -301,6 +308,7 @@ class TweeterPy(TweeterPyClient):
 
         # Dynamic API Definitions Update
         new_definitions = self.updater.run(response=str(home_page), deep_scan=deep_scan)
+        session_info = self._get_session_info(home_page=parse_html(home_page))
 
         # ClientTransaction Bundle
         ondemand_s_bundle_file = self.parser.get_bundle_url(
@@ -314,6 +322,7 @@ class TweeterPy(TweeterPyClient):
             home_page=home_page,
             ondemand_file_response=str(ondemand_file_response),
             new_definitions=new_definitions,
+            session_info=session_info,
         )
 
         # guest token (x-guest-token / gt)
@@ -350,6 +359,7 @@ class TweeterPyAsync(TweeterPyClient):
             deep_scan=deep_scan,
             max_concurrency=max_concurrency,
         )
+        session_info = self._get_session_info(home_page=parse_html(home_page))
 
         # ClientTransaction Bundle
         ondemand_s_bundle_file = self.parser.get_bundle_url(
@@ -363,6 +373,7 @@ class TweeterPyAsync(TweeterPyClient):
             home_page=home_page,
             ondemand_file_response=str(ondemand_file_response),
             new_definitions=new_definitions,
+            session_info=session_info,
         )
 
         # guest token (x-guest-token / gt)
