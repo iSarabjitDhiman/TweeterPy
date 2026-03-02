@@ -267,5 +267,37 @@ class TweeterPySession(ABC):
 # INTERFACES
 
 
+class TweeterPyLogger(ABC):
+    """
+    Interface for TweeterPy loggers.
+    Subclasses must implement all abstract methods.
+    """
+
+    @abstractmethod
+    def set_level(self, level: Union[str, int]) -> None:
+        """Change the logging level dynamically."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def debug(self, message: Any, *args: Any, **kwargs: Any) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def info(self, message: Any, *args: Any, **kwargs: Any) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def warning(self, message: Any, *args: Any, **kwargs: Any) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def error(self, message: Any, *args: Any, **kwargs: Any) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def exception(self, message: Any, *args: Any, **kwargs: Any) -> None:
+        raise NotImplementedError
+
+
 if __name__ == "__main__":
     pass
