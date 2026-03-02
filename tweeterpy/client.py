@@ -31,10 +31,15 @@ class TweeterPyClient:
         self.session = session
         self.parser = APIParser(logger=logger)
         self.updater = APIUpdater(logger=logger, session=session)
+        self._meta_data: Dict[str, Any] = {}
 
     @property
     def is_logged_in(self) -> bool:
-        return all(k in self.session.cookies for k in ("auth_token", "ct0"))
+        has_user = bool(self._meta_data.get("isLoggedIn")) and bool(
+            self._meta_data.get("userId")
+        )
+        has_cookies = all(k in self.session.cookies for k in ("auth_token", "ct0"))
+        return has_user and has_cookies
 
     @property
     def me(self):
@@ -55,6 +60,7 @@ class TweeterPyClient:
         ondemand_file_response: str,
         new_definitions: Dict[str, Any],
         session_info: Optional[Dict[str, Any]] = None,
+        meta_data: Optional[Dict[str, Any]] = None,
     ):
         """Shared logic to update state from fetched data."""
 
@@ -64,6 +70,10 @@ class TweeterPyClient:
             operations=new_definitions.get("operations", {}),
             session_info=session_info,
         )
+
+        # update metadata
+        if isinstance(meta_data, dict):
+            self._meta_data.update(meta_data)
 
         # Initialize ClientTransaction for x-client-transaction-id generation
         try:
@@ -310,6 +320,9 @@ class TweeterPy(TweeterPyClient):
         new_definitions = self.updater.run(response=str(home_page), deep_scan=deep_scan)
         session_info = self._get_session_info(home_page=parse_html(home_page))
 
+        # Metadata sync
+        meta_data = self.parser.parse_meta_data(html_content=home_page)
+
         # ClientTransaction Bundle
         ondemand_s_bundle_file = self.parser.get_bundle_url(
             bundle_name="ondemand.s", html_content=home_page
@@ -323,12 +336,27 @@ class TweeterPy(TweeterPyClient):
             ondemand_file_response=str(ondemand_file_response),
             new_definitions=new_definitions,
             session_info=session_info,
+            meta_data=meta_data,
         )
 
         # guest token (x-guest-token / gt)
         self.session.request(url=XUrls.GUEST_TOKEN, method="POST")
 
         self.logger.info("TweeterPy Client initialized successfully.")
+
+    def login_with_tokens(self, auth_token: str, csrf_token: Optional[str] = None):
+        """Authenticates the session using a pre-existing auth_token and ct0 (CSRF token)."""
+        tokens = {"auth_token": auth_token}
+        if csrf_token:
+            tokens.update({"ct0": csrf_token})
+
+        self.session.cookies.update(tokens)
+        self.initialize(deep_scan=False)
+
+        if not self.is_logged_in:
+            raise Exception("Authentication failed: Tokens are invalid or expired.")
+
+        self.logger.info(f"Successfully logged in as {self._meta_data.get('userId')}")
 
 
 class TweeterPyAsync(TweeterPyClient):
@@ -380,6 +408,22 @@ class TweeterPyAsync(TweeterPyClient):
         await self.session.request(url=XUrls.GUEST_TOKEN, method="POST")
 
         self.logger.info("TweeterPy Client initialized successfully.")
+
+    async def login_with_tokens(
+        self, auth_token: str, csrf_token: Optional[str] = None
+    ):
+        """Authenticates the session using a pre-existing auth_token and ct0 (CSRF token)."""
+        tokens = {"auth_token": auth_token}
+        if csrf_token:
+            tokens.update({"ct0": csrf_token})
+
+        self.session.cookies.update(tokens)
+        await self.initialize(deep_scan=False)
+
+        if not self.is_logged_in:
+            raise Exception("Authentication failed: Tokens are invalid or expired.")
+
+        self.logger.info(f"Successfully logged in as {self._meta_data.get('userId')}")
 
 
 if __name__ == "__main__":
