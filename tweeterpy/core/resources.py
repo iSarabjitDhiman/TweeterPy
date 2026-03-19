@@ -133,12 +133,14 @@ class RegexPatterns:
     BUNDLE_MANIFEST = re.compile(
         r"(?P<assignment>"
         r"[a-z0-9_$]+\.[a-z0-9_$]+\s*=\s*"
-        r"(?P<id_var>[a-z0-9_$]+)\s*=>\s*(?P=id_var)\s*"
+        r"(?P<id_var>[a-z0-9_$]+)\s*=>\s*\(\("
+        r"(?P<name_map>\{[\s\S]*?\})"
+        r"\[(?P=id_var)\]\s*\|\|\s*(?P=id_var)\)\s*"
         r"\+\s*\"\.\"\s*\+\s*"
-        r"(?P<mapping>\{[\s\S]*?\})"
+        r"(?P<hash_map>\{[\s\S]*?\})"
         r"\s*\[(?P=id_var)\]\s*"
         r"\+\s*\"a\.js\""
-        r")"
+        r"\))"
     )
     DOCUMENT_COOKIE = re.compile(
         r'document\.cookie\s*=\s*"(?P<cookie_content>.*?)"', re.DOTALL
@@ -156,6 +158,16 @@ class RegexPatterns:
     JS_BUNDLES = re.compile(
         rf"{re.escape(XUrls.TWITTER_CDN)}/(?P<bundle_name>[\w\.~-]+)\.(?P<bundle_hash>[a-f0-9]+)a?\.js",
         re.IGNORECASE,
+    )
+    LEGACY_BUNDLE_MANIFEST = re.compile(
+        r"(?P<assignment>"
+        r"[a-z0-9_$]+\.[a-z0-9_$]+\s*=\s*"
+        r"(?P<id_var>[a-z0-9_$]+)\s*=>\s*(?P=id_var)\s*"
+        r"\+\s*\"\.\"\s*\+\s*"
+        r"(?P<mapping>\{[\s\S]*?\})"
+        r"\s*\[(?P=id_var)\]\s*"
+        r"\+\s*\"a\.js\""
+        r")"
     )
     MAIN_JS_BUNDLE = re.compile(
         rf"{re.escape(XUrls.TWITTER_CDN)}/main\.(?P<bundle_hash>[a-f0-9]+)\.js"

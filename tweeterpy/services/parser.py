@@ -1,5 +1,5 @@
 import json
-from typing import Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Type, Union
 
 from tweeterpy.core.abstractions import TweeterPyLogger
 from tweeterpy.core.resources import RegexPatterns, XUrls
@@ -35,14 +35,14 @@ class APIParser:
     ) -> None:
         self.logger = Logger.get_logger(logger=logger, name=__name__)
 
-    def load_json(self, data: str, raise_error: bool = False) -> Optional[Dict]:
+    def load_json(self, data: str, raise_error: bool = False) -> Dict[str, Any]:
         try:
             return json.loads(data)
         except (json.JSONDecodeError, TypeError) as error:
             self.logger.error(error)
             if raise_error:
                 raise error
-            return None
+            return {}
 
     @ensure_str("html_content")
     def find_bundle_url(self, html_content: str, bundle_name: str) -> Optional[str]:
@@ -111,16 +111,27 @@ class APIParser:
 
     @ensure_str("html_content")
     def parse_bundle_manifest(self, html_content: str) -> Optional[Dict[str, str]]:
+        legacy_match = RegexPatterns.LEGACY_BUNDLE_MANIFEST.search(html_content)
+        if legacy_match:
+            raw_mapping = legacy_match.group("mapping")
+            return self.load_json(
+                data=normalize_js_object(raw_mapping), raise_error=False
+            )
+
         match = RegexPatterns.BUNDLE_MANIFEST.search(html_content)
-        if not match:
-            return None
+        if match:
+            bundle_names = self.load_json(
+                data=normalize_js_object(js_str=match.group("name_map"))
+            )
+            bundle_hashes = self.load_json(
+                data=normalize_js_object(js_str=match.group("hash_map"))
+            )
+            return {
+                bundle_names.get(key, key): value
+                for key, value in bundle_hashes.items()
+            }
 
-        raw_mapping = match.group("mapping")
-        bundle_manifest = self.load_json(
-            data=normalize_js_object(raw_mapping), raise_error=False
-        )
-
-        return bundle_manifest
+        return {}
 
     @ensure_str("html_content")
     def parse_initial_state(self, html_content: str):
