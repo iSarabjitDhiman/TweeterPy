@@ -43,7 +43,7 @@ def parse_html(data: Any, parser: Optional[str] = None) -> BeautifulSoup:
         parser = "html.parser"
 
     html_str = to_string(data=data)
-    return BeautifulSoup(markup=html_str, features="html.parser")
+    return BeautifulSoup(markup=html_str, features=parser)
 
 
 def parse_json(data: Any, default: Optional[Any] = None) -> Any:
