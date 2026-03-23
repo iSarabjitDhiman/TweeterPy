@@ -230,7 +230,7 @@ class TweeterPy:
         if session is None:
             session = self.request_client.session
         if session_name is None:
-            session_name = self.me['data']['viewer']['user_results']['result']['legacy']['screen_name']
+            session_name = self.me['data']['viewer']['user_results']['result']['core']['screen_name']
         return save_session(filename=session_name, path=path, session=session)
 
     def load_session(self, path=None):
