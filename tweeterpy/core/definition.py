@@ -1,15 +1,8 @@
 from typing import Any, Dict, Optional
 
-from tweeterpy.core.resources import XFeatures, XFieldToggleRules, XOperations, XUrls
-from tweeterpy.schemas import (
-    Endpoint,
-    FeatureSwitches,
-    FieldToggles,
-    Metadata,
-    Operation,
-    Route,
-)
-from tweeterpy.schemas.constants import OperationType
+from tweeterpy.core.resources import XFeatures, XFieldToggleRules, XOperations
+from tweeterpy.schemas import Metadata, Operation
+from tweeterpy.schemas.metadata import FeatureSwitch, FieldToggle
 from tweeterpy.utils.casing import Casing, CasingType
 
 
@@ -18,20 +11,14 @@ class APIDefinition:
 
     def __init__(
         self,
+        feature_switch: FeatureSwitch,
+        field_toggle: FieldToggle,
         operations: Optional[Dict[str, Any]] = None,
-        features: Optional[FeatureSwitches] = None,
-        session_info: Optional[Dict[str, Any]] = None,
     ):
         self._operations: Dict[str, Any] = {}
-        self.features = (
-            features
-            if isinstance(features, FeatureSwitches)
-            else FeatureSwitches(data=features)
-            if features
-            else FeatureSwitches(data=XFeatures().to_dict())
-        )
+        self.feature_switch = feature_switch
+        self.field_toggle = field_toggle
         self.operations = operations
-        self.session_info = session_info or {}
 
     def _normalize_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Converts all keys in a dictionary to the internal standard casing."""
@@ -52,136 +39,88 @@ class APIDefinition:
 
         self._operations = self._normalize_data(data=operations)
 
-    def build_metadata(self, operation_name: str) -> Metadata:
-        return Metadata(
-            feature_switches=FeatureSwitches(
-                data=self.get_features(operation_name=operation_name)
-            ),
-            field_toggles=FieldToggles(
-                data=self.get_toggles(operation_name=operation_name)
-            ),
+    @classmethod
+    def from_defaults(
+        cls, operations: Optional[Dict[str, Any]] = None
+    ) -> "APIDefinition":
+        """
+        Factory method to initialize APIDefinition with internal
+        XFeatures and XFieldToggleRules defaults.
+        """
+        # 1. Initialize the base resolvers
+        feature_switch = FeatureSwitch(custom_overrides=XFeatures().to_dict())
+        field_toggle = FieldToggle(
+            feature_switch=feature_switch,
+            disabled_fields=XFieldToggleRules.DISABLED_FIELDS,
+            rules_mapping=XFieldToggleRules.RULES_MAPPING,
+        )
+
+        # 2. Return a new instance of this class
+        return cls(
+            feature_switch=feature_switch,
+            field_toggle=field_toggle,
+            operations=operations,
         )
 
     def create_operation(
         self,
         operation_name: str,
-        operation_type: Optional[OperationType] = None,
-        query_id: Optional[str] = None,
         variables: Optional[Dict[str, Any]] = None,
+        should_resolve_metadata: bool = True,
     ) -> Operation:
-        operation_data = self.get_operation_data(operation_name=operation_name)
+        operation = self.get_operation_data(operation_name=operation_name)
 
-        query_id = (
-            query_id or operation_data.get("query_id") or operation_data.get("queryId")
-        )
-        operation_type = (
-            operation_type
-            or operation_data.get("operation_type")
-            or operation_data.get("operationType")
-        )
+        # Merge dynamic variables
+        if variables:
+            operation.variables.update(variables)
 
-        if not query_id:
-            raise ValueError(
-                f"Missing 'queryId' for operation '{operation_name}'. "
-                f"The local definition might be corrupted or outdated. Please run APIUpdater."
-            )
+        # Build the final metadata (resolved switches/toggles)
+        if should_resolve_metadata:
+            operation.metadata = self.resolve_metadata(operation)
 
-        if not operation_type:
-            operation_type = OperationType.QUERY
-            # raise ValueError(
-            #     f"Missing 'operationType' for operation '{operation_name}'. "
-            #     f"Ensure the operation is correctly defined in XOperations or the API definition file."
-            # )
+        return operation
 
-        variables = {**operation_data.get("variables", {}), **(variables or {})}
-
-        full_url = f"{XUrls.GRAPHQL_BASE}/{query_id}/{operation_name}"
-
-        endpoint = Endpoint(
-            name=operation_name,
-            route=Route(
-                query_id=query_id,
-                operation_name=operation_name,
-                operation_type=operation_type,
-            ),
-            url=full_url,
-        )
-
-        return Operation(
-            endpoint=endpoint,
-            variables=variables,
-            metadata=self.build_metadata(operation_name=operation_name),
-        )
-
-    def get_features(
-        self, operation_name: str, default: Optional[bool] = None
-    ) -> Dict[str, Any]:
-        operation_data = self.get_operation_data(operation_name=operation_name)
-        metadata = operation_data.get("metadata", {})
-        raw_features = metadata.get("featureSwitches") or metadata.get(
-            "feature_switches", []
-        )
-
-        if raw_features:
-            if isinstance(raw_features, list):
-                return self.features.get(name=raw_features, default=default)
-
-            if isinstance(raw_features, dict):
-                return raw_features
-
-        return self.features.switches
-
-    def get_operation_data(self, operation_name: str) -> Dict[str, Any]:
+    def get_operation_data(self, operation_name: str) -> Operation:
         normalized_operation_name = Casing.transform(
             text=operation_name, case_type=self.DEFAULT_CASING
         )
-        if normalized_operation_name in self.operations:
-            return self.operations.get(normalized_operation_name, {})
+        if normalized_operation_name in self._operations:
+            operation_data = self.operations.get(normalized_operation_name, {})
+            return Operation(**operation_data)
 
         operation_template = getattr(XOperations, normalized_operation_name, None)
         if isinstance(operation_template, Operation):
-            return operation_template.model_dump()
+            return operation_template.model_copy(deep=True)
 
         raise KeyError(
             f"Operation '{operation_name}' not found in live definition or XOperations presets. "
             f"Please ensure the operation name is correct or try running the APIUpdater."
         )
 
-    def get_toggles(self, operation_name: str) -> Dict[str, Any]:
-        operation_data = self.get_operation_data(operation_name=operation_name)
-        metadata = operation_data.get("metadata", {})
-        fields = metadata.get("fieldToggles") or metadata.get("field_toggles", [])
+    def resolve_metadata(self, operation: Operation) -> Metadata:
+        """Resolves raw feature/toggle names into X-compliant value dictionaries."""
+        operation_metadata = operation.metadata
 
-        if fields and isinstance(fields, list):
-            return {
-                field: XFieldToggleRules.resolve(
-                    field_name=field,
-                    feature_switches=self.features,
-                    session_info=self.session_info,
-                )
-                for field in fields
-            }
+        # 1. Resolve features (Returns a Dict)
+        # Ensure operation.metadata.feature_switches is treated as a list here
+        feature_switches = operation_metadata.feature_switches
+        resolved_features = (
+            self.feature_switch.resolve(names=feature_switches)
+            if isinstance(feature_switches, list)
+            else feature_switches
+        )
 
-        return fields if isinstance(fields, dict) else {}
+        # 2. Resolve toggles (Returns a Dict)
+        toggle_names = operation_metadata.field_toggles
+        resolved_toggles = (
+            self.field_toggle.resolve(names=toggle_names)
+            if isinstance(toggle_names, list)
+            else toggle_names
+        )
 
-    def update(
-        self,
-        operations: Optional[Dict[str, Any]] = None,
-        features: Optional[Dict[str, Any]] = None,
-        session_info: Optional[Dict[str, Any]] = None,
-    ):
-        """Updates existing definitions for top-level keys (features, operations, session_info)."""
-
-        if isinstance(features, dict):
-            self.features.update(data=features)
-
-        if isinstance(operations, dict):
-            self._operations.update(self._normalize_data(data=operations))
-
-        if isinstance(session_info, dict):
-            self.session_info.update(session_info)
-
-        return self
+        return Metadata(
+            feature_switches=resolved_features, field_toggles=resolved_toggles
+        )
 
 
 if __name__ == "__main__":
