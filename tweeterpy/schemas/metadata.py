@@ -184,8 +184,12 @@ class FieldToggle(ToggleMap):
 
 
 class Metadata(TweeterPySchema):
-    feature_switches: Union[List[str], Dict[str, Any]] = Field(default_factory=list)
-    field_toggles: Union[List[str], Dict[str, Any]] = Field(default_factory=list)
+    feature_switches: Optional[Union[List[str], Dict[str, Any]]] = Field(
+        default_factory=list
+    )
+    field_toggles: Optional[Union[List[str], Dict[str, Any]]] = Field(
+        default_factory=list
+    )
 
 
 if __name__ == "__main__":
