@@ -43,6 +43,10 @@ class Operation(TweeterPySchema):
     def method(self) -> str:
         return self.endpoint.route.operation_type.http_method
 
+    @property
+    def name(self) -> str:
+        return self.operation_name
+
     @computed_field
     @property
     def operation_name(self) -> str:
