@@ -1,12 +1,13 @@
 from .endpoint import Endpoint
-from .metadata import FeatureSwitches, FieldToggles, Metadata
+from .metadata import FeatureSwitch, FeatureSwitchUser, FieldToggle, Metadata
 from .operation import Operation
 from .route import Route
 
 __all__ = [
     "Endpoint",
-    "FeatureSwitches",
-    "FieldToggles",
+    "FeatureSwitch",
+    "FeatureSwitchUser",
+    "FieldToggle",
     "Metadata",
     "Operation",
     "Route",

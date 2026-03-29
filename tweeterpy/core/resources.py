@@ -1,9 +1,8 @@
 import re
 from dataclasses import asdict, dataclass
-from typing import Any, Dict
+from typing import Any, Dict, List
 
-from tweeterpy.schemas import Endpoint, Operation
-from tweeterpy.schemas.metadata import FeatureSwitches
+from tweeterpy.schemas import Endpoint, Metadata, Operation
 
 
 @dataclass
@@ -45,7 +44,10 @@ class XFeatures:
 
 class XFieldToggleRules:
     # Toggle -> Feature Switch Mapping
-    MAPPING = {
+    DISABLED_FIELDS: List[str] = [
+        "withArticlePlainText",
+    ]
+    RULES_MAPPING: Dict[str, Any] = {
         "withArticlePlainText": "responsive_web_twitter_article_plain_text_enabled",
         "withArticleRichContentState": "responsive_web_twitter_article_seed_tweet_detail_enabled",
         "withAuxiliaryUserLabels": "blue_business_multi_affiliates_ui_enabled",
@@ -53,40 +55,14 @@ class XFieldToggleRules:
         "withGrokAnalyze": "subscriptions_inapp_grok_analyze",
     }
 
-    DISABLED_FIELDS = [
-        "withArticlePlainText",
-    ]
-
-    @classmethod
-    def resolve(
-        cls,
-        field_name: str,
-        feature_switches: FeatureSwitches,
-        session_info: Dict[str, Any],
-        default: bool = False,
-    ) -> bool:
-        if field_name in cls.DISABLED_FIELDS:
-            return False
-
-        if field_name == "isDelegate":
-            return bool(session_info.get("actAsUserId", default))
-
-        if field_name == "withPayments":
-            is_enrolled = bool(session_info.get("xpaymentsEnrolled", default))
-            can_access = bool(session_info.get("canAccessPayments", default))
-            return is_enrolled and can_access
-
-        switch_name = cls.MAPPING.get(field_name)
-        if switch_name:
-            return feature_switches.is_true(name=switch_name)
-
-        return default
-
 
 class XOperations:
     @staticmethod
     def _create_operation(slug: str) -> Operation:
-        return Operation(endpoint=Endpoint.from_slug(slug=slug))
+        return Operation(
+            endpoint=Endpoint.from_slug(slug=slug),
+            metadata=Metadata(feature_switches=list(XFeatures().to_dict().keys())),
+        )
 
     # fmt:off
     BizProfileFetchUser = _create_operation("6OFpJ3TH3p8JpwOSgfgyhg/BizProfileFetchUser")

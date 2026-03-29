@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from pydantic import Field, computed_field, model_validator
 
@@ -16,10 +16,16 @@ class Operation(TweeterPySchema):
     @model_validator(mode="before")
     @classmethod
     def normalize_raw_data(cls, data: Any) -> Any:
-        if isinstance(data, dict) and "queryId" in data:
-            query_id = data.get("queryId")
-            operation_name = data.get("operationName", "Unknown")
-            operation_type = data.get("operationType", OperationType.QUERY)
+        """Handles the 'repacking' of flat JSON/Dict into the Route/Endpoint hierarchy."""
+        if isinstance(data, dict) and ("queryId" in data or "query_id" in data):
+            query = data.get("query")
+            query_id = data.get("queryId") or data.get("query_id")
+            operation_name = data.get("operationName") or data.get(
+                "operation_name", "Unknown"
+            )
+            operation_type = data.get("operationType") or data.get(
+                "operation_type", OperationType.QUERY
+            )
 
             # Repack into Endpoint/Route structure
             data["endpoint"] = {
@@ -28,6 +34,7 @@ class Operation(TweeterPySchema):
                     "query_id": query_id,
                     "operation_name": operation_name,
                     "operation_type": operation_type,
+                    "query": query,
                 },
             }
         return data
@@ -35,10 +42,6 @@ class Operation(TweeterPySchema):
     @property
     def method(self) -> str:
         return self.endpoint.route.operation_type.http_method
-
-    @property
-    def name(self) -> str:
-        return self.operation_name
 
     @computed_field
     @property
@@ -57,17 +60,13 @@ class Operation(TweeterPySchema):
 
     @computed_field
     @property
-    def query_id(self) -> str:
-        return self.endpoint.route.query_id
-
-    @property
-    def type(self) -> OperationType:
-        return self.operation_type
+    def query(self) -> str:
+        return self.endpoint.route.query
 
     @computed_field
     @property
-    def url(self) -> Optional[str]:
-        return self.endpoint.url
+    def query_id(self) -> str:
+        return self.endpoint.route.query_id
 
     @property
     def payload(self) -> Dict[str, Any]:
@@ -75,11 +74,11 @@ class Operation(TweeterPySchema):
         if self.variables:
             payload["variables"] = self.variables
 
-        if self.metadata.feature_switches.payload:
-            payload["features"] = self.metadata.feature_switches.payload
+        if self.metadata.feature_switches:
+            payload["features"] = self.metadata.feature_switches
 
-        if self.metadata.field_toggles.payload:
-            payload["fieldToggles"] = self.metadata.field_toggles.payload
+        if self.metadata.field_toggles:
+            payload["fieldToggles"] = self.metadata.field_toggles
         return payload
 
     def __str__(self) -> str:
