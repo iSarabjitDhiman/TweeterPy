@@ -82,10 +82,13 @@ class GraphQLClient:
         self,
         operation: Operation,
         variables: Dict[str, Any],
-        headers: Dict[str, Any],
-        timeout: int = 9000,
-        force_post: bool = False,
+        headers: Optional[Dict[str, Any]] = None,
+        timeout: Optional[int] = 9000,
+        force_post: Optional[bool] = False,
     ):
+        if headers is None:
+            headers = {}
+
         query_id = operation.query_id
         operation_name = operation.operation_name
         operation_type = operation.operation_type
