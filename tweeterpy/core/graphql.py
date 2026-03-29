@@ -1,8 +1,9 @@
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from tweeterpy.schemas.metadata import FeatureSwitch, FieldToggle
 from tweeterpy.schemas.operation import Operation
+from tweeterpy.utils.misc import resolve_metadata
 
 
 class GraphQLClient:
@@ -13,23 +14,22 @@ class GraphQLClient:
         self.field_toggle = field_toggle
 
     def get_feature_switches(
-        self, metadata_features: List[str]
+        self, metadata_features: Union[List[str], Dict[str, Any], None]
     ) -> Optional[Dict[str, Any]]:
-        if metadata_features and len(metadata_features) > 0:
-            return {
-                name: self.feature_switch.get_value_without_scribe_impression(name=name)
+        return resolve_metadata(
+            metadata=metadata_features,
+            resolver_func=lambda name: (
+                self.feature_switch.get_value_without_scribe_impression(name=name)
                 is True
-                for name in metadata_features
-            }
+            ),
+        )
 
     def get_field_toggles(
-        self, metadata_toggles: List[str]
+        self, metadata_toggles: Union[List[str], Dict[str, Any], None]
     ) -> Optional[Dict[str, Any]]:
-        if metadata_toggles and len(metadata_toggles) > 0:
-            return {
-                name: self.field_toggle.get_value(name=name)
-                for name in metadata_toggles
-            }
+        return resolve_metadata(
+            metadata=metadata_toggles, resolver_func=self.field_toggle.resolve
+        )
 
     def get_graphql_path(
         self, query_id: Optional[str] = None, operation_name: Optional[str] = None

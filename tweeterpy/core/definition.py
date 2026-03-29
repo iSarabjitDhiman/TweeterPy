@@ -4,6 +4,7 @@ from tweeterpy.core.resources import XFeatures, XFieldToggleRules, XOperations
 from tweeterpy.schemas import Metadata, Operation
 from tweeterpy.schemas.metadata import FeatureSwitch, FieldToggle
 from tweeterpy.utils.casing import Casing, CasingType
+from tweeterpy.utils.misc import resolve_metadata
 
 
 class APIDefinition:
@@ -76,7 +77,7 @@ class APIDefinition:
 
         # Build the final metadata (resolved switches/toggles)
         if should_resolve_metadata:
-            operation.metadata = self.resolve_metadata(operation)
+            operation.metadata = self.resolve_operation_metadata(operation)
 
         return operation
 
@@ -97,25 +98,18 @@ class APIDefinition:
             f"Please ensure the operation name is correct or try running the APIUpdater."
         )
 
-    def resolve_metadata(self, operation: Operation) -> Metadata:
+    def resolve_operation_metadata(self, operation: Operation) -> Metadata:
         """Resolves raw feature/toggle names into X-compliant value dictionaries."""
         operation_metadata = operation.metadata
 
-        # 1. Resolve features (Returns a Dict)
-        # Ensure operation.metadata.feature_switches is treated as a list here
         feature_switches = operation_metadata.feature_switches
-        resolved_features = (
-            self.feature_switch.resolve(names=feature_switches)
-            if isinstance(feature_switches, list)
-            else feature_switches
+        resolved_features = resolve_metadata(
+            metadata=feature_switches, resolver_func=self.feature_switch.resolve
         )
 
-        # 2. Resolve toggles (Returns a Dict)
         toggle_names = operation_metadata.field_toggles
-        resolved_toggles = (
-            self.field_toggle.resolve(names=toggle_names)
-            if isinstance(toggle_names, list)
-            else toggle_names
+        resolved_toggles = resolve_metadata(
+            metadata=toggle_names, resolver_func=self.field_toggle.resolve
         )
 
         return Metadata(
