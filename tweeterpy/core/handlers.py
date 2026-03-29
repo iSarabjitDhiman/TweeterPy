@@ -105,11 +105,14 @@ class RequestHandlers(BaseHandler):
         auth_token = RequestHandlers.get_cookie(session=session, name="auth_token")
         csrf_token = RequestHandlers.get_cookie(session=session, name="ct0")
 
-        if auth_token:
-            headers = {"x-twitter-auth-type": "OAuth2Session"}
-            if csrf_token:
-                headers["x-csrf-token"] = str(csrf_token)
+        headers = {}
 
+        if auth_token:
+            headers["x-twitter-auth-type"] = "OAuth2Session"
+        if csrf_token:
+            headers["x-csrf-token"] = str(csrf_token)
+
+        if headers:
             return RequestHandlers.update_headers(
                 context=context, new_headers=headers, overwrite=True
             )
@@ -166,19 +169,23 @@ class ResponseHandlers(BaseHandler):
         Audits the response for HTTP-level and Twitter API-level errors.
         Raises an exception if the API returns an error without data.
         """
-        if hasattr(response, "raise_for_status") and callable(
-            response.raise_for_status
-        ):
-            response.raise_for_status()
 
         if not is_json_response(response=response):
+            if hasattr(response, "raise_for_status") and callable(
+                response.raise_for_status
+            ):
+                response.raise_for_status()
+
             return response
 
         data = parse_json(data=response)
+
         if not isinstance(data, dict):
             return response
 
         errors = data.get("errors", [])
+        result_data = data.get("data")
+
         if "error" in data:
             errors.append(data.get("error"))
 
@@ -191,7 +198,10 @@ class ResponseHandlers(BaseHandler):
                 messages.append(f"Error code {code} - {message}" if code else message)
 
             error_message = "\n".join(messages)
-            logger.error(f"Twitter API Error: {error_message}")
+            if not result_data:
+                raise Exception(f"Twitter API Error: {error_message}")
+            else:
+                logger.error(f"Twitter API Error: {error_message}")
 
         return response
 
