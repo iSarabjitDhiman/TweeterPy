@@ -1,4 +1,5 @@
 import re
+from typing import Optional
 
 from pydantic import field_validator
 
@@ -7,13 +8,10 @@ from tweeterpy.schemas.constants import OperationType
 
 
 class Route(TweeterPySchema):
-    query_id: str
     operation_name: str
     operation_type: OperationType = OperationType.QUERY
-
-    @property
-    def full_path(self) -> str:
-        return f"{self.query_id}/{self.operation_name}"
+    query: Optional[str] = None
+    query_id: str
 
     @field_validator("query_id")
     @classmethod
@@ -26,8 +24,12 @@ class Route(TweeterPySchema):
 
         return v
 
+    @property
+    def path(self) -> str:
+        return f"{self.query_id}/{self.operation_name}"
+
     def __str__(self) -> str:
-        return self.full_path
+        return self.path
 
 
 if __name__ == "__main__":

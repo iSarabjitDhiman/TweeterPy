@@ -9,10 +9,9 @@ from tweeterpy.schemas.route import Route
 class Endpoint(TweeterPySchema):
     name: Optional[str] = None
     route: Route
-    url: Optional[str] = None
 
     @model_validator(mode="after")
-    def set_default_name(self):
+    def set_default_name(self) -> "Endpoint":
         if self.name is None:
             self.name = self.route.operation_name
         return self
@@ -38,7 +37,7 @@ class Endpoint(TweeterPySchema):
 
     @property
     def path(self) -> str:
-        return self.route.full_path
+        return self.route.path
 
     def __str__(self) -> str:
         return f"{self.method} {self.path}"
