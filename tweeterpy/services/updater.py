@@ -16,26 +16,11 @@ class APIUpdater:
         self.parser = APIParser(logger=logger)
         self.logger = Logger.get_logger(logger=logger, name=__name__)
 
-    def _prepare_queue(self, response: str, deep_scan: bool) -> tuple[dict, dict]:
-        """Shared logic to extract features and build the URL queue."""
-        feature_switches = {}
+    def _build_bundle_queue(self, response: str, deep_scan: bool):
         default_bundle_targets = ["main", "api"]
         bundle_queue = {}
 
-        features = self.parser.parse_features(html_content=response)
         bundle_manifest = self.parser.parse_bundle_manifest(html_content=response)
-
-        # Process Feature Switches (Merging Default + User specific)
-        if features:
-            default_features = features.get("defaultConfig") or {}
-            user_features = features.get("user", {}).get("config", {}) or {}
-            raw_feature_switches = {**default_features, **user_features}
-            feature_switches = {
-                feature_name: feature_switch.get("value", None)
-                if isinstance(feature_switch, dict)
-                else feature_switch
-                for feature_name, feature_switch in raw_feature_switches.items()
-            }
 
         # Add default bundles to queue
         for bundle_name in default_bundle_targets:
@@ -59,7 +44,33 @@ class APIUpdater:
                     }
                 )
 
-        return feature_switches, bundle_queue
+        return bundle_queue
+
+    def _get_base_definitions(self, response: str, deep_scan: bool):
+        switches_data = self._extract_feature_switches(response=response)
+        bundle_queue = self._build_bundle_queue(response=response, deep_scan=deep_scan)
+
+        return {
+            "features": switches_data.get("features", {}),
+            "feature_switch": switches_data.get("feature_switch", {}),
+            "operations": {},
+        }, bundle_queue
+
+    def _extract_feature_switches(self, response: str):
+        features = {}
+        feature_switch = self.parser.parse_features(html_content=response)
+
+        # Process Feature Switches (Merging Default + User specific)
+        if feature_switch:
+            default_features = feature_switch.get("defaultConfig") or {}
+            user_features = feature_switch.get("user", {}).get("config", {}) or {}
+            raw_feature_switches = {**default_features, **user_features}
+            features = {
+                name: switch.get("value", None) if isinstance(switch, dict) else switch
+                for name, switch in raw_feature_switches.items()
+            }
+
+        return {"feature_switch": feature_switch, "features": features}
 
     async def fetch_bundle(
         self, bundle_name: str, bundle_url: str, semaphore: asyncio.Semaphore
@@ -74,13 +85,11 @@ class APIUpdater:
                 self.logger.exception(f"Error processing {bundle_name}: {error}")
 
     def run(self, response: str, deep_scan: bool = False):
-        api_definitions = {"features": {}, "operations": {}}
-        try:
-            feature_switches, bundle_queue = self._prepare_queue(
-                response=response, deep_scan=deep_scan
-            )
-            api_definitions["features"] = feature_switches
+        api_definitions, bundle_queue = self._get_base_definitions(
+            response=response, deep_scan=deep_scan
+        )
 
+        try:
             self.logger.info(
                 f"Processing {len(bundle_queue)} bundle/s to extract API Operations..."
             )
@@ -105,14 +114,12 @@ class APIUpdater:
     async def run_async(
         self, response: str, deep_scan: bool = False, max_concurrency: int = 10
     ):
-        api_definitions = {"features": {}, "operations": {}}
+        api_definitions, bundle_queue = self._get_base_definitions(
+            response=response, deep_scan=deep_scan
+        )
         semaphore = asyncio.Semaphore(max_concurrency)
-        try:
-            feature_switches, bundle_queue = self._prepare_queue(
-                response=response, deep_scan=deep_scan
-            )
-            api_definitions["features"] = feature_switches
 
+        try:
             self.logger.info(f"Processing {len(bundle_queue)} bundle/s concurrently...")
 
             # Create all tasks for concurrent execution
