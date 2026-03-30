@@ -83,7 +83,7 @@ class GraphQLClient:
         operation: Operation,
         variables: Dict[str, Any],
         headers: Optional[Dict[str, Any]] = None,
-        timeout: Optional[int] = 9000,
+        timeout: Optional[int] = None,
         force_post: Optional[bool] = False,
     ):
         if headers is None:
@@ -115,8 +115,10 @@ class GraphQLClient:
             # "method": "POST" if (is_query_ready and build_post) else "GET",
             "method": "GET" if (is_query_ready and not build_post) else "POST",
             "headers": {**headers, "content-type": "application/json"},
-            "timeout": timeout,
         }
+
+        if timeout is not None:
+            request_payload["timeout"] = timeout
 
         if is_query_ready:
             if build_post:
