@@ -34,7 +34,7 @@ class BaseHandler:
     @staticmethod
     def get_headers(context: Dict[str, Any]) -> Dict[str, Any]:
         """Ensures headers exist and returns a copy to avoid side effects."""
-        return context.get("headers", {}).copy()
+        return (context.get("headers") or {}).copy()
 
     @staticmethod
     def set_cookie(session: TweeterPySession, name: str, value: str, **kwargs):
