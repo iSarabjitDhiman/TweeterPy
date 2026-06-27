@@ -2,9 +2,9 @@ import logging.config
 
 logger = logging.getLogger(__name__)
 
-PUBLIC_TOKEN = 'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA'
+PUBLIC_TOKEN = "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA"
 
-USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36'
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36"
 
 # Filename to store api data/endpoints as a backup.
 API_TMP_FILE = "tweeterpy_api.json"
@@ -22,42 +22,42 @@ LOG_LEVEL = "INFO"
 
 # Log Configuration.
 LOGGING_CONFIG = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'standard': {
-            'format': '%(asctime)s [%(levelname)s] [Line No. %(lineno)d] %(name)s : %(funcName)s :: %(message)s'
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "%(asctime)s [%(levelname)s] [Line No. %(lineno)d] %(name)s : %(funcName)s :: %(message)s"
         },
-        'custom': {
+        "custom": {
             # 'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
-            'class': 'tweeterpy.utils.logging.CustomFormatter',
-        }
-    },
-    'handlers': {
-        'stream': {
-            'level': LOG_LEVEL,
-            'formatter': 'custom',
-            'class': 'logging.StreamHandler',
-            'stream': 'ext://sys.stdout'
+            "class": "tweeterpy.utils.logging.CustomFormatter",
         },
-        'file': {
-            'level': 'DEBUG',
-            'formatter': 'standard',
-            'class': 'logging.FileHandler',
-            'filename': LOG_FILE_NAME,
-            "encoding": "utf-8"
-        }
     },
-    'loggers': {
-        '': {  # root logger
-            'handlers': ['stream', 'file'],
-            'level': 'DEBUG'
+    "handlers": {
+        "stream": {
+            "level": LOG_LEVEL,
+            "formatter": "custom",
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",
         },
-        '__main__': {  # if __name__ == '__main__'
-            'handlers': ['stream', 'file'],
-            'level': 'DEBUG',
-        }
-    }
+        "file": {
+            "level": "DEBUG",
+            "formatter": "standard",
+            "class": "logging.FileHandler",
+            "filename": LOG_FILE_NAME,
+            "encoding": "utf-8",
+        },
+    },
+    "loggers": {
+        "": {  # root logger
+            "handlers": ["stream", "file"],
+            "level": "DEBUG",
+        },
+        "__main__": {  # if __name__ == '__main__'
+            "handlers": ["stream", "file"],
+            "level": "DEBUG",
+        },
+    },
 }
 
 
@@ -93,6 +93,7 @@ class Path:
     # URLS
     DOMAIN = "x.com"
     BASE_URL = "https://x.com/"
+    HOME_PAGE = "https://x.com/home"
     API_URL = "https://api.x.com/graphql/"
     TASK_URL = "https://api.x.com/1.1/onboarding/task.json"
     GUEST_TOKEN_URL = "https://api.x.com/1.1/guest/activate.json"
@@ -132,7 +133,7 @@ class FeatureSwitch:
     api_endpoints = {}
 
     def get_query_features(self, api_path):
-        # fmt: off 
+        # fmt: off
         try:
             features = self.api_endpoints.get(api_path)['metadata']['featureSwitches']
             features = {feature : self.all_feature_switches.get(feature,{}).get('value',False) for feature in features}

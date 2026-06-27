@@ -1,16 +1,24 @@
+import datetime
+import logging.config
 import os
 import re
-import bs4
-import time
-import datetime
 import tempfile
-import logging.config
+import time
+from dataclasses import _MISSING_TYPE, asdict, dataclass, field, fields
 from functools import reduce
 from typing import Dict, List
 from urllib.parse import urljoin
+
+import bs4
 from x_client_transaction.utils import get_ondemand_file_url
-from tweeterpy.constants import Path, PUBLIC_TOKEN, LOGGING_CONFIG, USER_AGENT, API_TMP_FILE
-from dataclasses import dataclass, field, fields, asdict, _MISSING_TYPE
+
+from tweeterpy.constants import (
+    API_TMP_FILE,
+    LOGGING_CONFIG,
+    PUBLIC_TOKEN,
+    USER_AGENT,
+    Path,
+)
 
 logging.config.dictConfig(LOGGING_CONFIG)
 logger = logging.getLogger(__name__)
@@ -107,7 +115,7 @@ def handle_x_migration(session):
     migration_redirection_regex = re.compile(
         r"""(http(?:s)?://(?:www\.)?(twitter|x){1}\.com(/x)?/migrate([/?])?tok=[a-zA-Z0-9%\-_]+)+""", re.VERBOSE)
     try:
-        response = session.request(method="GET", url=Path.BASE_URL)
+        response = session.request(method="GET", url=Path.HOME_PAGE)
         home_page = bs4.BeautifulSoup(response.content, 'lxml')
         migration_url = home_page.select_one("meta[http-equiv='refresh']")
         migration_redirection_url = re.search(migration_redirection_regex, str(
