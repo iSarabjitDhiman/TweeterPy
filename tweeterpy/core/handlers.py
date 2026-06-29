@@ -1,17 +1,23 @@
+from __future__ import annotations
+
 import logging.config
 import re
 from http.cookies import SimpleCookie
-from typing import Any, Dict
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
 from x_client_transaction import ClientTransaction
 
 from tweeterpy.config import TweeterPyConfig
 from tweeterpy.constants import LOGGING_CONFIG
-from tweeterpy.core.abstractions import TweeterPySession
 from tweeterpy.core.resources import RegexPatterns, XUrls
 from tweeterpy.utils.misc import is_json_response
 from tweeterpy.utils.text import parse_json, to_string
+
+if TYPE_CHECKING:
+    from tweeterpy.core.abstractions import TweeterPySession
+    from tweeterpy.schemas.types import Headers, RequestContext, Response
+
 
 logging.config.dictConfig(LOGGING_CONFIG)
 logger = logging.getLogger(__name__)
@@ -32,24 +38,24 @@ class BaseHandler:
         return getter(name, **kwargs)
 
     @staticmethod
-    def get_headers(context: Dict[str, Any]) -> Dict[str, Any]:
+    def get_headers(context: RequestContext) -> Headers:
         """Ensures headers exist and returns a copy to avoid side effects."""
         return (context.get("headers") or {}).copy()
 
     @staticmethod
-    def set_cookie(session: TweeterPySession, name: str, value: str, **kwargs):
+    def set_cookie(session: TweeterPySession, name: str, value: str, **kwargs) -> None:
         """Standardizes cookie injection across different session types."""
         setter = getattr(session.cookies, "set", None)
         if setter and callable(setter):
             try:
                 setter(name=name, value=value.strip('"'), **kwargs)
             except Exception as error:
-                logger.debug(f"Failed to set cookie {name}: {error}")
+                logger.warning(f"Failed to set cookie {name}: {error}")
 
     @staticmethod
     def update_headers(
-        context: Dict[str, Any], new_headers: Dict[str, Any], overwrite: bool = False
-    ) -> Dict[str, Any]:
+        context: RequestContext, new_headers: Headers, overwrite: bool = False
+    ) -> RequestContext:
         """
         Updates the headers within the kwargs context.
         If overwrite is False, it only sets headers that don't already exist.
@@ -71,11 +77,15 @@ class BaseHandler:
 
 class RequestHandlers(BaseHandler):
     @staticmethod
-    def inject_twitter_headers(url: str, **context):
+    def inject_twitter_headers(context: RequestContext) -> RequestContext:
         """
         Automatically attaches the Bearer token only to Twitter API and GraphQL endpoints.
         Prevents 403 errors when visiting the main x.com / twitter.com homepages.
         """
+        url = context.get("url")
+        if url is None:
+            return context
+
         # Matches: api.x.com, x.com/i/api/, x.com/graphql/, etc.
         api_patterns = [
             r"api\.(x|twitter)\.com",
@@ -100,8 +110,12 @@ class RequestHandlers(BaseHandler):
         return context
 
     @staticmethod
-    def inject_auth_headers(session: TweeterPySession, **context):
+    def inject_auth_headers(context: RequestContext) -> RequestContext:
         """Injects CSRF and Auth headers if the session is logged in."""
+        session = context.get("session")
+        if not session:
+            return context
+
         auth_token = RequestHandlers.get_cookie(session=session, name="auth_token")
         csrf_token = RequestHandlers.get_cookie(session=session, name="ct0")
 
@@ -120,8 +134,12 @@ class RequestHandlers(BaseHandler):
         return context
 
     @staticmethod
-    def inject_guest_token(session: TweeterPySession, **context):
+    def inject_guest_token(context: RequestContext) -> RequestContext:
         """Injects x-guest-token header from the session cookies."""
+        session = context.get("session")
+        if not session:
+            return context
+
         guest_token = RequestHandlers.get_cookie(
             session=session, name="gt", domain=".x.com"
         )
@@ -136,22 +154,21 @@ class RequestHandlers(BaseHandler):
         return context
 
     @staticmethod
-    def inject_transaction_id(
-        url: str, method: str, session: TweeterPySession, **context
-    ):
+    def inject_transaction_id(context: RequestContext) -> RequestContext:
         """
         Generates and injects the x-client-transaction-id header.
         Requires session.client_transaction to be initialized.
         """
+        session = context.get("session")
         client_transaction = getattr(session, "client_transaction", None)
 
         if isinstance(client_transaction, ClientTransaction):
             try:
                 transaction_id = client_transaction.generate_transaction_id(
-                    method=method, path=urlparse(url).path
+                    method=context.get("method"), path=urlparse(context.get("url")).path
                 )
                 if transaction_id:
-                    context = RequestHandlers.update_headers(
+                    return RequestHandlers.update_headers(
                         context=context,
                         new_headers={"x-client-transaction-id": str(transaction_id)},
                         overwrite=True,
@@ -159,12 +176,12 @@ class RequestHandlers(BaseHandler):
             except Exception as error:
                 logger.warning(f"Could not generate x-client-transaction-id: {error}")
 
-        return {"url": url, "method": method, **context}
+        return context
 
 
 class ResponseHandlers(BaseHandler):
     @staticmethod
-    def api_error_validator(response: Any, **context):
+    def api_error_validator(response: Response, context: RequestContext) -> Response:
         """
         Audits the response for HTTP-level and Twitter API-level errors.
         Raises an exception if the API returns an error without data.
@@ -199,7 +216,7 @@ class ResponseHandlers(BaseHandler):
 
             error_message = "\n".join(messages)
             if not result_data:
-                raise Exception(f"Twitter API Error: {error_message}")
+                raise RuntimeError(f"Twitter API Error: {error_message}")
             else:
                 logger.error(f"Twitter API Error: {error_message}")
 
@@ -207,10 +224,11 @@ class ResponseHandlers(BaseHandler):
 
     @staticmethod
     def twitter_cookie_injector_hook(
-        response: Any, session: TweeterPySession, **context
-    ):
+        response: Response, context: RequestContext
+    ) -> Response:
         """Extracts document.cookie calls from Twitter's HTML and manually sets them in the session."""
-        if is_json_response(response=response):
+        session = context.get("session")
+        if not session or is_json_response(response=response):
             return response
 
         content = to_string(data=response)
@@ -232,16 +250,21 @@ class ResponseHandlers(BaseHandler):
                     )
 
             except Exception as error:
-                logger.warning(error)
+                logger.warning(
+                    f"Failed to injection parse document cookie segment: {error}"
+                )
 
         return response
 
     @staticmethod
     def twitter_guest_token_handler(
-        url: str, response: Any, session: TweeterPySession, **context
-    ):
+        response: Response, context: RequestContext
+    ) -> Response:
         """Extracts guest_token from JSON responses like activate.json."""
-        if not is_json_response(response=response):
+        session = context.get("session")
+        url = context.get("url")
+
+        if not session or not all([session, url, is_json_response(response=response)]):
             return response
 
         if XUrls.GUEST_TOKEN in url:

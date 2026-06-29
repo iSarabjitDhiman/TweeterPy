@@ -1,18 +1,23 @@
-import asyncio
-from typing import Optional, Type, Union
+from __future__ import annotations
 
-from tweeterpy.core.abstractions import TweeterPyLogger, TweeterPySession
+import asyncio
+from typing import TYPE_CHECKING, Optional, Type, Union
+
 from tweeterpy.log import Logger
 from tweeterpy.services.parser import APIParser
 
+if TYPE_CHECKING:
+    from tweeterpy.core.abstractions import (
+        TweeterPyAsyncSession,
+        TweeterPyLogger,
+        TweeterPySyncSession,
+    )
 
-class APIUpdater:
+
+class BaseAPIUpdater:
     def __init__(
-        self,
-        session: TweeterPySession,
-        logger: Optional[Union[TweeterPyLogger, Type[TweeterPyLogger]]] = None,
+        self, logger: Optional[Union[TweeterPyLogger, Type[TweeterPyLogger]]] = None
     ) -> None:
-        self.session = session
         self.parser = APIParser(logger=logger)
         self.logger = Logger.get_logger(logger=logger, name=__name__)
 
@@ -72,17 +77,15 @@ class APIUpdater:
 
         return {"feature_switch": feature_switch, "features": features}
 
-    async def fetch_bundle(
-        self, bundle_name: str, bundle_url: str, semaphore: asyncio.Semaphore
-    ):
-        async with semaphore:
-            try:
-                self.logger.debug(f"Processing Bundle: {bundle_name} - {bundle_url}")
 
-                js_content = await self.session.request(url=bundle_url, method="GET")
-                return self.parser.parse_operations(js_content=js_content)
-            except Exception as error:
-                self.logger.exception(f"Error processing {bundle_name}: {error}")
+class APIUpdater(BaseAPIUpdater):
+    def __init__(
+        self,
+        session: TweeterPySyncSession,
+        logger: Optional[Union[TweeterPyLogger, Type[TweeterPyLogger]]] = None,
+    ) -> None:
+        self.session = session
+        super().__init__(logger=logger)
 
     def run(self, response: str, deep_scan: bool = False):
         api_definitions, bundle_queue = self._get_base_definitions(
@@ -111,7 +114,29 @@ class APIUpdater:
 
         return api_definitions
 
-    async def run_async(
+
+class AsyncAPIUpdater(BaseAPIUpdater):
+    def __init__(
+        self,
+        session: TweeterPyAsyncSession,
+        logger: Optional[Union[TweeterPyLogger, Type[TweeterPyLogger]]] = None,
+    ) -> None:
+        self.session = session
+        super().__init__(logger=logger)
+
+    async def fetch_bundle(
+        self, bundle_name: str, bundle_url: str, semaphore: asyncio.Semaphore
+    ):
+        async with semaphore:
+            try:
+                self.logger.debug(f"Processing Bundle: {bundle_name} - {bundle_url}")
+
+                js_content = await self.session.request(url=bundle_url, method="GET")
+                return self.parser.parse_operations(js_content=js_content)
+            except Exception as error:
+                self.logger.exception(f"Error processing {bundle_name}: {error}")
+
+    async def run(
         self, response: str, deep_scan: bool = False, max_concurrency: int = 10
     ):
         api_definitions, bundle_queue = self._get_base_definitions(

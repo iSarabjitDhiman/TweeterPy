@@ -1,15 +1,20 @@
-from typing import Any, Awaitable, Dict, Optional, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from bs4 import BeautifulSoup
 
-from tweeterpy.core.abstractions import TweeterPySession
 from tweeterpy.core.resources import RegexPatterns, XUrls
+from tweeterpy.schemas.constants import HttpMethod, ResponseType
 from tweeterpy.utils.decorators import ensure_html
 
+if TYPE_CHECKING:
+    from tweeterpy.core.abstractions import TweeterPyAsyncSession, TweeterPySyncSession
 
-class XMigrationHandler:
-    def __init__(self, session: TweeterPySession) -> None:
-        self.session = session
+
+class BaseXMigrationHandler:
+    def __init__(self) -> None:
+        pass
 
     @ensure_html("response")
     def get_migration_url(self, response: BeautifulSoup) -> Optional[str]:
@@ -37,39 +42,49 @@ class XMigrationHandler:
             },
         }
 
-    def run(self, response: BeautifulSoup):
+
+class XMigrationHandler(BaseXMigrationHandler):
+    def __init__(self, session: TweeterPySyncSession) -> None:
+        self.session = session
+        super().__init__()
+
+    def run(self, response: BeautifulSoup) -> BeautifulSoup:
         migration_url = self.get_migration_url(response=response)
         if not migration_url:
             return response
 
-        migration_page = self.session.request_html(method="GET", url=migration_url)
-        migration_form = self.get_migration_form(response=migration_page)
-        if migration_form:
-            return self.session.request(**migration_form)
-
-        return response
-
-    async def run_async(self, response: BeautifulSoup):
-        migration_url = self.get_migration_url(response=response)
-        if not migration_url:
-            return response
-
-        migration_page = await self.session.request_html(
-            method="GET", url=migration_url
+        migration_page = self.session.request(
+            method=HttpMethod.GET, url=migration_url, response_type=ResponseType.HTML
         )
         migration_form = self.get_migration_form(response=migration_page)
         if migration_form:
-            return await self.session.request(**migration_form)
+            return self.session.request(
+                **migration_form, response_type=ResponseType.HTML
+            )
 
         return response
 
-    def migrate(
-        self, response: BeautifulSoup
-    ) -> Union[BeautifulSoup, Awaitable[BeautifulSoup]]:
-        if self.session.is_async:
-            return self.run_async(response=response)
 
-        return self.run(response=response)
+class AsyncXMigrationHandler(BaseXMigrationHandler):
+    def __init__(self, session: TweeterPyAsyncSession) -> None:
+        self.session = session
+        super().__init__()
+
+    async def run(self, response: BeautifulSoup) -> BeautifulSoup:
+        migration_url = self.get_migration_url(response=response)
+        if not migration_url:
+            return response
+
+        migration_page = await self.session.request(
+            method=HttpMethod.GET, url=migration_url, response_type=ResponseType.HTML
+        )
+        migration_form = self.get_migration_form(response=migration_page)
+        if migration_form:
+            return await self.session.request(
+                **migration_form, response_type=ResponseType.HTML
+            )
+
+        return response
 
 
 if __name__ == "__main__":

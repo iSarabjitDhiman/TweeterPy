@@ -1,27 +1,48 @@
+from __future__ import annotations
+
 import random
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Type,
+    Union,
+)
 
 from bs4 import BeautifulSoup
 from x_client_transaction import ClientTransaction
 
-from tweeterpy.core.abstractions import TweeterPyLogger
+from tweeterpy.core.abstractions import (
+    SessionType,
+    TweeterPyAsyncSession,
+    TweeterPySyncSession,
+)
+from tweeterpy.core.api import APIClient
 from tweeterpy.core.definition import APIDefinition
 from tweeterpy.core.graphql import GraphQLClient
-from tweeterpy.core.migration import XMigrationHandler
+from tweeterpy.core.migration import AsyncXMigrationHandler, XMigrationHandler
 from tweeterpy.core.resources import XOperations, XUrls
-from tweeterpy.core.session import AsyncSession, Session, TweeterPySession
+from tweeterpy.core.session import AsyncSession, Session
 from tweeterpy.log import Logger, StandardLogger
+from tweeterpy.schemas.base import TweeterPySchema
+from tweeterpy.schemas.constants import HttpMethod, ResponseType
 from tweeterpy.schemas.metadata import FeatureSwitch, FieldToggle
 from tweeterpy.schemas.operation import Operation
 from tweeterpy.services.parser import APIParser
-from tweeterpy.services.updater import APIUpdater
+from tweeterpy.services.updater import APIUpdater, AsyncAPIUpdater
 from tweeterpy.utils.text import parse_html
 
+if TYPE_CHECKING:
+    from tweeterpy.core.abstractions import TweeterPyLogger
 
-class TweeterPyClient:
+
+class TweeterPyClient(Generic[SessionType]):
     def __init__(
         self,
-        session: TweeterPySession,
+        session: SessionType,
         logger: Optional[Union[TweeterPyLogger, Type[TweeterPyLogger]]] = None,
         definitions: Optional[APIDefinition] = None,
     ) -> None:
@@ -32,14 +53,17 @@ class TweeterPyClient:
             logger = StandardLogger
 
         self.api_definitions = definitions
-        self.graphql_client = GraphQLClient(
-            feature_switch=self.api_definitions.feature_switch,
-            field_toggle=self.api_definitions.field_toggle,
-        )
+        self.session = session
         self.logger = Logger.get_logger(logger=logger, name=__name__)
         self.parser = APIParser(logger=logger)
-        self.session = session
-        self.updater = APIUpdater(logger=logger, session=session)
+        self.api_client = APIClient(
+            graphql_client=GraphQLClient(
+                feature_switch=self.api_definitions.feature_switch,
+                field_toggle=self.api_definitions.field_toggle,
+            ),
+            session=self.session,
+            host=XUrls.API_BASE,
+        )
         self._meta_data: Dict[str, Any] = {}
 
     @property
@@ -88,11 +112,14 @@ class TweeterPyClient:
         self.api_definitions.operations = new_definitions.get("operations", {})
         field_toggle = self.api_definitions.field_toggle
         field_toggle._feature_switch = self.api_definitions.feature_switch
-        field_toggle._session = session_info
+        if session_info is not None:
+            field_toggle._session = session_info
 
-        # Update GraphQLClient
-        self.graphql_client.feature_switch = self.api_definitions.feature_switch
-        self.graphql_client.field_toggle = self.api_definitions.field_toggle
+        # Update APIClient
+        self.api_client.graphql_client.feature_switch = (
+            self.api_definitions.feature_switch
+        )
+        self.api_client.graphql_client.field_toggle = self.api_definitions.field_toggle
 
         # update metadata
         if isinstance(meta_data, dict):
@@ -112,28 +139,27 @@ class TweeterPyClient:
         if isinstance(initial_state, dict):
             return initial_state.get("session", {})
 
+    def _normalize_params(
+        self, data: Union[Dict[str, Any], TweeterPySchema]
+    ) -> Dict[str, Any]:
+        """Converts Schema instances to dicts, or returns dicts as-is."""
+        if isinstance(data, TweeterPySchema):
+            return data.model_dump()
+        if isinstance(data, dict):
+            return data
+        raise TypeError(f"Expected dict or TweeterPySchema, got {type(data).__name__}")
+
     def execute(
         self,
         operation: Union[Operation, str],
-        variables: Optional[Dict[str, Any]] = None,
+        variables: Dict[str, Any],
     ):
         operation_name = (
             operation.name if isinstance(operation, Operation) else operation
         )
         operation = self.api_definitions.create_operation(operation_name=operation_name)
 
-        request_payload = self.graphql_client.prepare_request(
-            operation=operation, variables=variables
-        )
-
-        return self.session.request(
-            url=f"{XUrls.API_BASE}{request_payload.get('path')}",
-            method=request_payload.get("method"),
-            headers=request_payload.get("headers"),
-            params=request_payload.get("params"),
-            json=request_payload.get("json"),
-            timeout=request_payload.get("timeout"),
-        )
+        return self.api_client.graphql(operation=operation, variables=variables)
 
     def profile_spotlights_query(self, username: str):
         variables = {"screen_name": username}
@@ -305,11 +331,11 @@ class TweeterPyClient:
         return self.execute(operation=XOperations.SearchTimeline, variables=variables)
 
 
-class TweeterPy(TweeterPyClient):
+class TweeterPy(TweeterPyClient[TweeterPySyncSession]):
     def __init__(
         self,
         logger: Optional[Union[TweeterPyLogger, Type[TweeterPyLogger]]] = None,
-        session: Optional[TweeterPySession] = None,
+        session: Optional[TweeterPySyncSession] = None,
         definitions: Optional[APIDefinition] = None,
     ) -> None:
         if session is None:
@@ -319,16 +345,17 @@ class TweeterPy(TweeterPyClient):
 
     def initialize(self, deep_scan: bool = False):
         """Prepares the session by fetching required tokens and metadata."""
-        home_page = self.session.request_html(url=XUrls.BASE, method="GET")
-        if not isinstance(home_page, BeautifulSoup):
-            return
+        home_page = self.session.request(
+            url=XUrls.BASE, method=HttpMethod.GET, response_type=ResponseType.HTML
+        )
 
         # Handle X Migration
         migrator = XMigrationHandler(session=self.session)
         home_page = migrator.run(response=home_page)
 
         # Dynamic API Definitions Update
-        new_definitions = self.updater.run(response=str(home_page), deep_scan=deep_scan)
+        updater = APIUpdater(logger=self.logger, session=self.session)
+        new_definitions = updater.run(response=str(home_page), deep_scan=deep_scan)
         session_info = self._get_session_info(home_page=parse_html(home_page))
 
         # Metadata sync
@@ -338,8 +365,10 @@ class TweeterPy(TweeterPyClient):
         ondemand_s_bundle_file = self.parser.get_bundle_url(
             bundle_name="ondemand.s", html_content=home_page
         )
-        ondemand_file_response = self.session.request_html(
-            url=ondemand_s_bundle_file, method="GET"
+        ondemand_file_response = self.session.request(
+            url=ondemand_s_bundle_file,
+            method=HttpMethod.GET,
+            response_type=ResponseType.HTML,
         )
 
         self._apply_updates(
@@ -351,7 +380,7 @@ class TweeterPy(TweeterPyClient):
         )
 
         # guest token (x-guest-token / gt)
-        self.session.request(url=XUrls.GUEST_TOKEN, method="POST")
+        self.session.request(url=XUrls.GUEST_TOKEN, method=HttpMethod.POST)
 
         self.logger.info("TweeterPy Client initialized successfully.")
 
@@ -370,11 +399,11 @@ class TweeterPy(TweeterPyClient):
         self.logger.info(f"Successfully logged in as {self._meta_data.get('userId')}")
 
 
-class TweeterPyAsync(TweeterPyClient):
+class TweeterPyAsync(TweeterPyClient[TweeterPyAsyncSession]):
     def __init__(
         self,
         logger: Optional[Union[TweeterPyLogger, Type[TweeterPyLogger]]] = None,
-        session: Optional[TweeterPySession] = None,
+        session: Optional[TweeterPyAsyncSession] = None,
         definitions: Optional[APIDefinition] = None,
     ) -> None:
         if session is None:
@@ -384,16 +413,17 @@ class TweeterPyAsync(TweeterPyClient):
 
     async def initialize(self, deep_scan: bool = False, max_concurrency: int = 10):
         """Prepares the session by fetching required tokens and metadata."""
-        home_page = await self.session.request_html(url=XUrls.BASE, method="GET")
-        if not isinstance(home_page, BeautifulSoup):
-            return
+        home_page = await self.session.request(
+            url=XUrls.BASE, method=HttpMethod.GET, response_type=ResponseType.HTML
+        )
 
         # Handle X Migration
-        migrator = XMigrationHandler(session=self.session)
-        home_page = await migrator.run_async(response=home_page)
+        migrator = AsyncXMigrationHandler(session=self.session)
+        home_page = await migrator.run(response=home_page)
 
         # Dynamic API Definitions Update
-        new_definitions = await self.updater.run_async(
+        updater = AsyncAPIUpdater(logger=self.logger, session=self.session)
+        new_definitions = await updater.run(
             response=str(home_page),
             deep_scan=deep_scan,
             max_concurrency=max_concurrency,
@@ -404,8 +434,10 @@ class TweeterPyAsync(TweeterPyClient):
         ondemand_s_bundle_file = self.parser.get_bundle_url(
             bundle_name="ondemand.s", html_content=home_page
         )
-        ondemand_file_response = await self.session.request_html(
-            url=ondemand_s_bundle_file, method="GET"
+        ondemand_file_response = await self.session.request(
+            url=ondemand_s_bundle_file,
+            method=HttpMethod.GET,
+            response_type=ResponseType.HTML,
         )
 
         self._apply_updates(
@@ -416,7 +448,7 @@ class TweeterPyAsync(TweeterPyClient):
         )
 
         # guest token (x-guest-token / gt)
-        await self.session.request(url=XUrls.GUEST_TOKEN, method="POST")
+        await self.session.request(url=XUrls.GUEST_TOKEN, method=HttpMethod.POST)
 
         self.logger.info("TweeterPy Client initialized successfully.")
 

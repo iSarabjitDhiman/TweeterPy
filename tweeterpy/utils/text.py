@@ -1,6 +1,6 @@
 import json
 import re
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from bs4 import BeautifulSoup
 
@@ -46,7 +46,9 @@ def parse_html(data: Any, parser: Optional[str] = None) -> BeautifulSoup:
     return BeautifulSoup(markup=html_str, features=parser)
 
 
-def parse_json(data: Any, default: Optional[Any] = None) -> Any:
+def parse_json(
+    data: Any, default: Optional[Any] = None
+) -> Union[Dict[str, Any], List[Any], Any]:
     """Safely converts string/bytes/response to a dictionary."""
     if data is None:
         return default

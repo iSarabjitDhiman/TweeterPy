@@ -1,9 +1,20 @@
-import json
-from typing import Any, Dict, List, Optional, Union
+from __future__ import annotations
 
-from tweeterpy.schemas.metadata import FeatureSwitch, FieldToggle
-from tweeterpy.schemas.operation import Operation
+import json
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
+from tweeterpy.schemas.types import (
+    Headers,
+    JSONDict,
+    MetadataInput,
+    OperationVariables,
+    Params,
+)
 from tweeterpy.utils.misc import resolve_metadata
+
+if TYPE_CHECKING:
+    from tweeterpy.schemas.metadata import FeatureSwitch, FieldToggle
+    from tweeterpy.schemas.operation import Operation
 
 
 class GraphQLClient:
@@ -14,8 +25,8 @@ class GraphQLClient:
         self.field_toggle = field_toggle
 
     def get_feature_switches(
-        self, metadata_features: Union[List[str], Dict[str, Any], None]
-    ) -> Optional[Dict[str, Any]]:
+        self, metadata_features: MetadataInput
+    ) -> Optional[JSONDict]:
         return resolve_metadata(
             metadata=metadata_features,
             resolver_func=lambda name: (
@@ -24,9 +35,7 @@ class GraphQLClient:
             ),
         )
 
-    def get_field_toggles(
-        self, metadata_toggles: Union[List[str], Dict[str, Any], None]
-    ) -> Optional[Dict[str, Any]]:
+    def get_field_toggles(self, metadata_toggles: MetadataInput) -> Optional[JSONDict]:
         return resolve_metadata(
             metadata=metadata_toggles, resolver_func=self.field_toggle.resolve
         )
@@ -43,10 +52,10 @@ class GraphQLClient:
 
     def prepare_get_request(
         self,
-        variables: Dict[str, Any],
-        features: Optional[Dict[str, Any]] = None,
-        field_toggles: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        variables: OperationVariables,
+        features: Optional[JSONDict] = None,
+        field_toggles: Optional[JSONDict] = None,
+    ) -> Dict[str, Params]:
         params = {"variables": json.dumps(variables, separators=(",", ":"))}
 
         if features:
@@ -58,12 +67,12 @@ class GraphQLClient:
 
     def prepare_post_request(
         self,
-        variables: Dict[str, Any],
-        features: Optional[Dict[str, Any]] = None,
-        field_toggles: Optional[Dict[str, Any]] = None,
+        variables: OperationVariables,
+        features: Optional[JSONDict] = None,
+        field_toggles: Optional[JSONDict] = None,
         query: Optional[str] = None,
         query_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> Dict[str, JSONDict]:
         payload: Dict[str, Any] = {"variables": variables}
 
         if query_id:
@@ -81,11 +90,11 @@ class GraphQLClient:
     def prepare_request(
         self,
         operation: Operation,
-        variables: Dict[str, Any],
-        headers: Optional[Dict[str, Any]] = None,
+        variables: OperationVariables,
+        headers: Optional[Headers] = None,
         timeout: Optional[int] = None,
         force_post: Optional[bool] = False,
-    ):
+    ) -> JSONDict:
         if headers is None:
             headers = {}
 
