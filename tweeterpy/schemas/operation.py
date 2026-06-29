@@ -1,4 +1,6 @@
-from typing import Any, Dict
+from __future__ import annotations
+
+from typing import Any, Dict, Optional
 
 from pydantic import Field, computed_field, model_validator
 
@@ -6,12 +8,21 @@ from tweeterpy.schemas.base import TweeterPySchema
 from tweeterpy.schemas.constants import OperationType
 from tweeterpy.schemas.endpoint import Endpoint
 from tweeterpy.schemas.metadata import Metadata
+from tweeterpy.schemas.types import OperationData
 
 
 class Operation(TweeterPySchema):
     endpoint: Endpoint
     variables: Dict[str, Any] = Field(default_factory=dict)
     metadata: Metadata = Field(default_factory=Metadata)
+
+    @staticmethod
+    def from_raw_operation_data(operation_data: OperationData) -> Operation:
+        """
+        Factory method to create an Operation from raw dictionary data.
+        Bypasses Pylance's unpacking ambiguity by using Pydantic's internal validation.
+        """
+        return Operation.model_validate(operation_data)
 
     @model_validator(mode="before")
     @classmethod
@@ -20,11 +31,13 @@ class Operation(TweeterPySchema):
         if isinstance(data, dict) and ("queryId" in data or "query_id" in data):
             query = data.get("query")
             query_id = data.get("queryId") or data.get("query_id")
-            operation_name = data.get("operationName") or data.get(
-                "operation_name", "Unknown"
+            operation_name = (
+                data.get("operationName") or data.get("operation_name") or "Unknown"
             )
-            operation_type = data.get("operationType") or data.get(
-                "operation_type", OperationType.QUERY
+            operation_type = (
+                data.get("operationType")
+                or data.get("operation_type")
+                or OperationType.QUERY
             )
 
             # Repack into Endpoint/Route structure
@@ -64,7 +77,7 @@ class Operation(TweeterPySchema):
 
     @computed_field
     @property
-    def query(self) -> str:
+    def query(self) -> Optional[str]:
         return self.endpoint.route.query
 
     @computed_field

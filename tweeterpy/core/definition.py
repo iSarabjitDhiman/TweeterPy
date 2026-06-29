@@ -1,8 +1,11 @@
-from typing import Any, Dict, Optional
+from __future__ import annotations
+
+from typing import Dict, Optional
 
 from tweeterpy.core.resources import XFeatures, XFieldToggleRules, XOperations
 from tweeterpy.schemas import Metadata, Operation
 from tweeterpy.schemas.metadata import FeatureSwitch, FieldToggle
+from tweeterpy.schemas.types import OperationData, OperationVariables
 from tweeterpy.utils.casing import Casing, CasingType
 from tweeterpy.utils.misc import resolve_metadata
 
@@ -14,14 +17,16 @@ class APIDefinition:
         self,
         feature_switch: FeatureSwitch,
         field_toggle: FieldToggle,
-        operations: Optional[Dict[str, Any]] = None,
+        operations: Optional[Dict[str, OperationData]] = None,
     ):
-        self._operations: Dict[str, Any] = {}
+        self._operations: Dict[str, OperationData] = {}
         self.feature_switch = feature_switch
         self.field_toggle = field_toggle
         self.operations = operations
 
-    def _normalize_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _normalize_data(
+        self, data: Dict[str, OperationData]
+    ) -> Dict[str, OperationData]:
         """Converts all keys in a dictionary to the internal standard casing."""
         return {
             Casing.transform(text=key, case_type=self.DEFAULT_CASING): value
@@ -29,11 +34,11 @@ class APIDefinition:
         }
 
     @property
-    def operations(self) -> Dict[str, Any]:
+    def operations(self) -> Dict[str, OperationData]:
         return self._operations
 
     @operations.setter
-    def operations(self, operations: Optional[Dict[str, Any]]):
+    def operations(self, operations: Optional[Dict[str, OperationData]]):
         if not isinstance(operations, dict):
             self._operations = {}
             return
@@ -42,8 +47,8 @@ class APIDefinition:
 
     @classmethod
     def from_defaults(
-        cls, operations: Optional[Dict[str, Any]] = None
-    ) -> "APIDefinition":
+        cls, operations: Optional[Dict[str, OperationData]] = None
+    ) -> APIDefinition:
         """
         Factory method to initialize APIDefinition with internal
         XFeatures and XFieldToggleRules defaults.
@@ -66,7 +71,7 @@ class APIDefinition:
     def create_operation(
         self,
         operation_name: str,
-        variables: Optional[Dict[str, Any]] = None,
+        variables: Optional[OperationVariables] = None,
         should_resolve_metadata: bool = True,
     ) -> Operation:
         operation = self.get_operation_data(operation_name=operation_name)
@@ -86,8 +91,12 @@ class APIDefinition:
             text=operation_name, case_type=self.DEFAULT_CASING
         )
         if normalized_operation_name in self._operations:
-            operation_data = self.operations.get(normalized_operation_name, {})
-            return Operation(**operation_data)
+            operation_data = self._operations.get(normalized_operation_name)
+            if operation_data:
+                base_operation = Operation.from_raw_operation_data(
+                    operation_data=operation_data
+                )
+                return base_operation.model_copy(deep=True)
 
         operation_template = getattr(XOperations, normalized_operation_name, None)
         if isinstance(operation_template, Operation):
