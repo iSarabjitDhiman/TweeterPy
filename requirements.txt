@@ -3,4 +3,4 @@ curl-cffi==0.13.0
 pydantic==2.12.5
 pyotp==2.9.0
 typing-extensions>=4.10.0
-XClientTransaction==1.0.1
+XClientTransaction==1.0.3

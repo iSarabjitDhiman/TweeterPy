@@ -109,14 +109,22 @@ class RegexPatterns:
     BUNDLE_MANIFEST = re.compile(
         r"(?P<assignment>"
         r"[a-z0-9_$]+\.[a-z0-9_$]+\s*=\s*"
-        r"(?P<id_var>[a-z0-9_$]+)\s*=>\s*\(\("
+        r"(?P<id_var>[a-z0-9_$]+)\s*=>\s*"
+        r"(?:\"\"\s*\+\s*)?"
+        r"\(?"
+        r"\("
         r"(?P<name_map>\{[\s\S]*?\})"
-        r"\[(?P=id_var)\]\s*\|\|\s*(?P=id_var)\)\s*"
-        r"\+\s*\"\.\"\s*\+\s*"
+        r"\)"
+        r"\[(?P=id_var)\]\s*\|\|\s*(?P=id_var)"
+        r"\s*\)?\s*"
+        r"\+\s*[\"']\.[\"']\s*\+\s*"
+        r"\(?"
         r"(?P<hash_map>\{[\s\S]*?\})"
-        r"\s*\[(?P=id_var)\]\s*"
-        r"\+\s*\"a\.js\""
-        r"\))"
+        r"\)?"
+        r"\[(?P=id_var)\]"
+        r"\s*\+\s*[\"']a\.js[\"']"
+        r")",
+        re.MULTILINE,
     )
     DOCUMENT_COOKIE = re.compile(
         r'document\.cookie\s*=\s*"(?P<cookie_content>.*?)"', re.DOTALL
