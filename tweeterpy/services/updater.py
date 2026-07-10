@@ -28,25 +28,19 @@ class BaseAPIUpdater:
 
         # Add default bundles to queue
         for bundle_name in default_bundle_targets:
-            bundle_url = self.parser.get_bundle_url(
+            bundle = self.parser.get_bundle(
                 bundle_name=bundle_name, html_content=response, manifest=bundle_manifest
             )
-            if bundle_url:
-                bundle_queue[bundle_name] = bundle_url
+            if bundle:
+                bundle_queue[bundle_name] = bundle
 
         # Deep Scan: Expand queue with all operational bundles from manifest
         if deep_scan and bundle_manifest:
-            operational_bundles = self.parser.get_operational_bundles(
+            operational_bundles_manifest = self.parser.get_operational_bundles(
                 manifest=bundle_manifest
             )
-            if operational_bundles:
-                bundle_queue.update(
-                    {
-                        bundle.get("bundle_name"): bundle.get("bundle_url")
-                        for bundle in operational_bundles
-                        if isinstance(bundle, dict)
-                    }
-                )
+            if operational_bundles_manifest:
+                bundle_queue.update(operational_bundles_manifest.bundles)
 
         return bundle_queue
 
@@ -96,13 +90,13 @@ class APIUpdater(BaseAPIUpdater):
                 f"Processing {len(bundle_queue)} bundle/s to extract API Operations..."
             )
 
-            for bundle_name, bundle_url in bundle_queue.items():
+            for bundle_name, bundle in bundle_queue.items():
                 try:
                     self.logger.debug(
-                        f"Processing Bundle: {bundle_name} - {bundle_url}"
+                        f"Processing Bundle: {bundle_name} - {bundle.url}"
                     )
                     js_content: TextResponse = self.api_client.get(
-                        endpoint=bundle_url,
+                        endpoint=bundle.url,
                         version=APIVersion.UNVERSIONED,
                         response_type=ResponseType.TEXT,
                     )
@@ -156,9 +150,9 @@ class AsyncAPIUpdater(BaseAPIUpdater):
             # Create all tasks for concurrent execution
             tasks = [
                 self.fetch_bundle(
-                    bundle_name=bundle_name, bundle_url=bundle_url, semaphore=semaphore
+                    bundle_name=bundle_name, bundle_url=bundle.url, semaphore=semaphore
                 )
-                for bundle_name, bundle_url in bundle_queue.items()
+                for bundle_name, bundle in bundle_queue.items()
             ]
             results = await asyncio.gather(*tasks, return_exceptions=True)
 

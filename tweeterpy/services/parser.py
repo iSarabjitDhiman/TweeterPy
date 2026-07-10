@@ -1,9 +1,10 @@
 import json
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, Optional, Type, Union
 
 from tweeterpy.core.abstractions import TweeterPyLogger
-from tweeterpy.core.resources import RegexPatterns, XHosts
+from tweeterpy.core.resources import RegexPatterns
 from tweeterpy.log import Logger
+from tweeterpy.schemas.resources import BundleManifest, ScriptBundle
 from tweeterpy.utils.decorators import ensure_str
 from tweeterpy.utils.text import normalize_js_object
 
@@ -45,52 +46,50 @@ class APIParser:
             return {}
 
     @ensure_str("html_content")
-    def find_bundle_url(self, html_content: str, bundle_name: str) -> Optional[str]:
+    def find_bundle_url(self, bundle_name: str, html_content: str) -> Optional[str]:
         for match in RegexPatterns.JS_BUNDLES.finditer(html_content):
             if match.group("bundle_name") == bundle_name:
                 return match.group(0)
         return None
 
     @ensure_str("html_content")
-    def get_api_bundle_url(
-        self, html_content: str, manifest: Optional[Dict] = None
-    ) -> Optional[str]:
-        bundle_url = self.get_bundle_url(
+    def get_api_bundle(
+        self, html_content: str, manifest: Optional[BundleManifest] = None
+    ) -> Optional[ScriptBundle]:
+        api_bundle = self.get_bundle(
             bundle_name="api", html_content=html_content, manifest=manifest
         )
 
-        if not bundle_url:
+        if not api_bundle:
             api_match = RegexPatterns.API_BUNDLE.search(html_content)
             if api_match:
                 api_bundle_hash = api_match.group("bundle_hash")
-                bundle_url = f"{XHosts.CDN}/api.{api_bundle_hash}a.js"
+                api_bundle = ScriptBundle(name="api", hash=api_bundle_hash)
 
-        return bundle_url
+        return api_bundle
 
     @ensure_str("html_content")
-    def get_bundle_url(
-        self, bundle_name: str, html_content: str, manifest: Optional[Dict] = None
-    ) -> Optional[str]:
+    def get_bundle(
+        self,
+        bundle_name: str,
+        html_content: str,
+        manifest: Optional[BundleManifest] = None,
+    ) -> Optional[ScriptBundle]:
         url_from_source = self.find_bundle_url(
-            html_content=html_content, bundle_name=bundle_name
+            bundle_name=bundle_name, html_content=html_content
         )
         if url_from_source:
-            return url_from_source
+            return ScriptBundle.from_url(url=url_from_source)
 
         bundle_manifest = manifest or self.parse_bundle_manifest(
             html_content=html_content
         )
-        bundle_hash = bundle_manifest.get(bundle_name) if bundle_manifest else None
+        return bundle_manifest.bundles.get(bundle_name, None)
 
-        if bundle_hash:
-            return f"{XHosts.CDN}/{bundle_name}.{bundle_hash}a.js"
-
-        return None
-
-    def get_operational_bundles(self, manifest: Dict[str, str]) -> List[Dict[str, str]]:
-        operational_bundles = []
-        for bundle_name, bundle_hash in manifest.items():
-            if not bundle_name or not bundle_hash:
+    def get_operational_bundles(self, manifest: BundleManifest) -> BundleManifest:
+        operational_bundles = {}
+        for bundle_name, bundle in manifest.bundles.items():
+            if not bundle_name or not bundle:
                 continue
 
             if not bundle_name.startswith(self.BUNDLE_NAME_PREFIXES):
@@ -99,39 +98,43 @@ class APIParser:
             if bundle_name.startswith(self.BUNDLE_NAME_EXCLUSIONS):
                 continue
 
-            operational_bundles.append(
-                {
-                    "bundle_name": bundle_name,
-                    "bundle_hash": bundle_hash,
-                    "bundle_url": f"{XHosts.CDN}/{bundle_name}.{bundle_hash}a.js",
-                }
-            )
+            operational_bundles[bundle_name] = bundle
 
-        return operational_bundles
+        return BundleManifest(bundles=operational_bundles)
 
     @ensure_str("html_content")
-    def parse_bundle_manifest(self, html_content: str) -> Optional[Dict[str, str]]:
+    def parse_bundle_manifest(self, html_content: str) -> BundleManifest:
         legacy_match = RegexPatterns.LEGACY_BUNDLE_MANIFEST.search(html_content)
         if legacy_match:
             raw_mapping = legacy_match.group("mapping")
-            return self.load_json(
+            bundle_mapping = self.load_json(
                 data=normalize_js_object(raw_mapping), raise_error=False
             )
+            return BundleManifest(
+                bundles={
+                    bundle_name: ScriptBundle(name=bundle_name, hash=bundle_hash)
+                    for bundle_name, bundle_hash in bundle_mapping.items()
+                }
+            )
 
-        match = RegexPatterns.BUNDLE_MANIFEST.search(html_content)
-        if match:
+        bundle_match = RegexPatterns.BUNDLE_MANIFEST.search(html_content)
+        if bundle_match:
             bundle_names = self.load_json(
-                data=normalize_js_object(js_str=match.group("name_map"))
+                data=normalize_js_object(js_str=bundle_match.group("name_map"))
             )
             bundle_hashes = self.load_json(
-                data=normalize_js_object(js_str=match.group("hash_map"))
+                data=normalize_js_object(js_str=bundle_match.group("hash_map"))
             )
-            return {
-                bundle_names.get(key, key): value
-                for key, value in bundle_hashes.items()
-            }
+            return BundleManifest(
+                bundles={
+                    bundle_names.get(key, key): ScriptBundle(
+                        id=int(float(key)), name=bundle_names.get(key, key), hash=value
+                    )
+                    for key, value in bundle_hashes.items()
+                }
+            )
 
-        return {}
+        return BundleManifest(bundles={})
 
     @ensure_str("html_content")
     def parse_initial_state(self, html_content: str):

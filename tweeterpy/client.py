@@ -368,11 +368,11 @@ class TweeterPy(TweeterPyClient[TweeterPySyncSession, APIClient]):
         meta_data = self.parser.parse_meta_data(html_content=home_page)
 
         # ClientTransaction Bundle
-        ondemand_s_bundle_file = self.parser.get_bundle_url(
+        ondemand_s_bundle = self.parser.get_bundle(
             bundle_name="ondemand.s", html_content=home_page
         )
         ondemand_file_response = self.api_client.request(
-            path=ondemand_s_bundle_file,
+            path=ondemand_s_bundle.url,
             method=HttpMethod.GET,
             response_type=ResponseType.HTML,
         )
@@ -449,11 +449,11 @@ class TweeterPyAsync(TweeterPyClient[TweeterPyAsyncSession, AsyncAPIClient]):
         session_info = self._get_session_info(home_page=parse_html(home_page))
 
         # ClientTransaction Bundle
-        ondemand_s_bundle_file = self.parser.get_bundle_url(
+        ondemand_s_bundle = self.parser.get_bundle(
             bundle_name="ondemand.s", html_content=home_page
         )
         ondemand_file_response = await self.api_client.request(
-            path=ondemand_s_bundle_file,
+            path=ondemand_s_bundle.url,
             method=HttpMethod.GET,
             response_type=ResponseType.HTML,
         )
