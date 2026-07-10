@@ -1,6 +1,7 @@
 from typing import Any, Dict
+from urllib.parse import urlparse
 
-from tweeterpy.core.resources import XUrls
+from tweeterpy.core.resources import XHosts
 
 
 class TweeterPyConfig:
@@ -10,11 +11,11 @@ class TweeterPyConfig:
     @classmethod
     def headers(cls) -> Dict[str, Any]:
         return {
-            "authority": XUrls.DOMAIN,
+            "authority": urlparse(XHosts.BASE).netloc,
             "accept": "*/*",
             "accept-language": "en-US,en;q=0.9",
             "cache-control": "no-cache",
-            "referer": XUrls.BASE,
+            "referer": XHosts.BASE,
             "user-agent": cls.USER_AGENT,
         }
 

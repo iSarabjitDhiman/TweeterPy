@@ -10,7 +10,7 @@ from x_client_transaction import ClientTransaction
 
 from tweeterpy.config import TweeterPyConfig
 from tweeterpy.constants import LOGGING_CONFIG
-from tweeterpy.core.resources import RegexPatterns, XUrls
+from tweeterpy.core.resources import RegexPatterns, XEndpoints
 from tweeterpy.utils.misc import is_json_response
 from tweeterpy.utils.text import parse_json, to_string
 
@@ -267,7 +267,9 @@ class ResponseHandlers(BaseHandler):
         if not session or not all([session, url, is_json_response(response=response)]):
             return response
 
-        if XUrls.GUEST_TOKEN in url:
+        url_path = urlparse(url=url).path
+
+        if XEndpoints.GUEST_TOKEN in url_path:
             try:
                 data = parse_json(data=response)
                 if isinstance(data, dict) and data.get("guest_token", None):

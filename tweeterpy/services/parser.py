@@ -2,7 +2,7 @@ import json
 from typing import Any, Dict, List, Optional, Type, Union
 
 from tweeterpy.core.abstractions import TweeterPyLogger
-from tweeterpy.core.resources import RegexPatterns, XUrls
+from tweeterpy.core.resources import RegexPatterns, XHosts
 from tweeterpy.log import Logger
 from tweeterpy.utils.decorators import ensure_str
 from tweeterpy.utils.text import normalize_js_object
@@ -63,7 +63,7 @@ class APIParser:
             api_match = RegexPatterns.API_BUNDLE.search(html_content)
             if api_match:
                 api_bundle_hash = api_match.group("bundle_hash")
-                bundle_url = f"{XUrls.TWITTER_CDN}/api.{api_bundle_hash}a.js"
+                bundle_url = f"{XHosts.CDN}/api.{api_bundle_hash}a.js"
 
         return bundle_url
 
@@ -83,7 +83,7 @@ class APIParser:
         bundle_hash = bundle_manifest.get(bundle_name) if bundle_manifest else None
 
         if bundle_hash:
-            return f"{XUrls.TWITTER_CDN}/{bundle_name}.{bundle_hash}a.js"
+            return f"{XHosts.CDN}/{bundle_name}.{bundle_hash}a.js"
 
         return None
 
@@ -103,7 +103,7 @@ class APIParser:
                 {
                     "bundle_name": bundle_name,
                     "bundle_hash": bundle_hash,
-                    "bundle_url": f"{XUrls.TWITTER_CDN}/{bundle_name}.{bundle_hash}a.js",
+                    "bundle_url": f"{XHosts.CDN}/{bundle_name}.{bundle_hash}a.js",
                 }
             )
 

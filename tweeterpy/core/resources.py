@@ -91,6 +91,26 @@ class XOperations:
     # fmt:on
 
 
+class XHosts:
+    API = "https://api.x.com"
+    BASE = "https://x.com"  # Main consumer gateway / API endpoints
+    GRAPHQL = "https://x.com/i/api/graphql"
+    TWITTER = "https://twitter.com"
+    UPLOAD = "https://upload.x.com"
+    CDN = "https://abs.twimg.com/responsive-web/client-web"
+
+
+class XEndpoints:
+    HOME = "home"
+    EXPLORE = "guide"
+    GUEST_TOKEN = "guest/activate"
+    MIGRATION = "x/migrate"
+    LOGOUT = "account/logout"
+    SSO_INIT_TOKEN = "onboarding/sso_init"
+    JAVSCRIPT_INSTRUMENTATION = "js_inst"
+    TASK = "onboarding/task"
+
+
 class XUrls:
     DOMAIN = "x.com"
     BASE = f"https://{DOMAIN}"
@@ -140,7 +160,7 @@ class RegexPatterns:
         r"window\.__INITIAL_STATE__\s*=\s*(?P<initial_state>\{.*?\});", re.DOTALL
     )
     JS_BUNDLES = re.compile(
-        rf"{re.escape(XUrls.TWITTER_CDN)}/(?P<bundle_name>[\w\.~-]+)\.(?P<bundle_hash>[a-f0-9]+)a?\.js",
+        rf"{re.escape(XHosts.CDN)}/(?P<bundle_name>[\w\.~-]+)\.(?P<bundle_hash>[a-f0-9]+)a?\.js",
         re.IGNORECASE,
     )
     LEGACY_BUNDLE_MANIFEST = re.compile(
@@ -154,7 +174,7 @@ class RegexPatterns:
         r")"
     )
     MAIN_JS_BUNDLE = re.compile(
-        rf"{re.escape(XUrls.TWITTER_CDN)}/main\.(?P<bundle_hash>[a-f0-9]+)\.js"
+        rf"{re.escape(XHosts.CDN)}/main\.(?P<bundle_hash>[a-f0-9]+)\.js"
     )
     META_DATA = re.compile(
         r"window\.__META_DATA__\s*=\s*(?P<meta_data>\{.*?\});", re.DOTALL
