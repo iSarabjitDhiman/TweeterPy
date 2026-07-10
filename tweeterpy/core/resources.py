@@ -160,7 +160,7 @@ class RegexPatterns:
         r"window\.__INITIAL_STATE__\s*=\s*(?P<initial_state>\{.*?\});", re.DOTALL
     )
     JS_BUNDLES = re.compile(
-        rf"{re.escape(XHosts.CDN)}/(?P<bundle_name>[\w\.~-]+)\.(?P<bundle_hash>[a-f0-9]+)a?\.js",
+        rf"{re.escape(XHosts.CDN)}/(?P<bundle_name>[\w\.~-]+)\.(?P<bundle_hash>[a-f0-9]+?)a?\.js",
         re.IGNORECASE,
     )
     LEGACY_BUNDLE_MANIFEST = re.compile(
