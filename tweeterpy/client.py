@@ -16,21 +16,23 @@ from bs4 import BeautifulSoup
 from x_client_transaction import ClientTransaction
 
 from tweeterpy.core.abstractions import (
+    APIClientType,
     SessionType,
     TweeterPyAsyncSession,
     TweeterPySyncSession,
 )
-from tweeterpy.core.api import APIClient
+from tweeterpy.core.api import APIClient, AsyncAPIClient
 from tweeterpy.core.definition import APIDefinition
 from tweeterpy.core.graphql import GraphQLClient
 from tweeterpy.core.migration import AsyncXMigrationHandler, XMigrationHandler
-from tweeterpy.core.resources import XOperations, XUrls
+from tweeterpy.core.resources import XEndpoints, XHosts, XOperations
 from tweeterpy.core.session import AsyncSession, Session
 from tweeterpy.log import Logger, StandardLogger
 from tweeterpy.schemas.base import TweeterPySchema
-from tweeterpy.schemas.constants import HttpMethod, ResponseType
+from tweeterpy.schemas.constants import APIVersion, HttpMethod, ResponseType
 from tweeterpy.schemas.metadata import FeatureSwitch, FieldToggle
 from tweeterpy.schemas.operation import Operation
+from tweeterpy.schemas.types import HTMLResponse
 from tweeterpy.services.parser import APIParser
 from tweeterpy.services.updater import APIUpdater, AsyncAPIUpdater
 from tweeterpy.utils.text import parse_html
@@ -39,10 +41,9 @@ if TYPE_CHECKING:
     from tweeterpy.core.abstractions import TweeterPyLogger
 
 
-class TweeterPyClient(Generic[SessionType]):
+class TweeterPyClient(Generic[SessionType, APIClientType]):
     def __init__(
         self,
-        session: SessionType,
         logger: Optional[Union[TweeterPyLogger, Type[TweeterPyLogger]]] = None,
         definitions: Optional[APIDefinition] = None,
     ) -> None:
@@ -52,18 +53,10 @@ class TweeterPyClient(Generic[SessionType]):
         if logger is None:
             logger = StandardLogger
 
+        self.api_client: APIClientType
         self.api_definitions = definitions
-        self.session = session
         self.logger = Logger.get_logger(logger=logger, name=__name__)
         self.parser = APIParser(logger=logger)
-        self.api_client = APIClient(
-            graphql_client=GraphQLClient(
-                feature_switch=self.api_definitions.feature_switch,
-                field_toggle=self.api_definitions.field_toggle,
-            ),
-            session=self.session,
-            host=XUrls.API_BASE,
-        )
         self._meta_data: Dict[str, Any] = {}
 
     @property
@@ -79,7 +72,7 @@ class TweeterPyClient(Generic[SessionType]):
         has_user = bool(self._meta_data.get("isLoggedIn")) and bool(
             self._meta_data.get("userId")
         )
-        has_cookies = all(k in self.session.cookies for k in ("auth_token", "ct0"))
+        has_cookies = all(k in self.api_client.cookies for k in ("auth_token", "ct0"))
         return has_user and has_cookies
 
     @property
@@ -127,7 +120,7 @@ class TweeterPyClient(Generic[SessionType]):
 
         # Initialize ClientTransaction for x-client-transaction-id generation
         try:
-            self.session.client_transaction = ClientTransaction(
+            self.api_client.client_transaction = ClientTransaction(
                 home_page_response=parse_html(home_page),
                 ondemand_file_response=ondemand_file_response,
             )
@@ -159,7 +152,9 @@ class TweeterPyClient(Generic[SessionType]):
         )
         operation = self.api_definitions.create_operation(operation_name=operation_name)
 
-        return self.api_client.graphql(operation=operation, variables=variables)
+        return self.api_client.graphql(
+            operation=operation, variables=variables, host=XHosts.API
+        )
 
     def profile_spotlights_query(self, username: str):
         variables = {"screen_name": username}
@@ -331,7 +326,7 @@ class TweeterPyClient(Generic[SessionType]):
         return self.execute(operation=XOperations.SearchTimeline, variables=variables)
 
 
-class TweeterPy(TweeterPyClient[TweeterPySyncSession]):
+class TweeterPy(TweeterPyClient[TweeterPySyncSession, APIClient]):
     def __init__(
         self,
         logger: Optional[Union[TweeterPyLogger, Type[TweeterPyLogger]]] = None,
@@ -341,20 +336,31 @@ class TweeterPy(TweeterPyClient[TweeterPySyncSession]):
         if session is None:
             session = Session()
 
-        super().__init__(session=session, definitions=definitions, logger=logger)
+        super().__init__(definitions=definitions, logger=logger)
+
+        self.api_client = APIClient(
+            graphql_client=GraphQLClient(
+                feature_switch=self.api_definitions.feature_switch,
+                field_toggle=self.api_definitions.field_toggle,
+            ),
+            session=session,
+            host=XHosts.BASE,
+        )
 
     def initialize(self, deep_scan: bool = False):
         """Prepares the session by fetching required tokens and metadata."""
-        home_page = self.session.request(
-            url=XUrls.BASE, method=HttpMethod.GET, response_type=ResponseType.HTML
+        home_page: HTMLResponse = self.api_client.get(
+            endpoint=XEndpoints.HOME,
+            version=APIVersion.UNVERSIONED,
+            response_type=ResponseType.HTML,
         )
 
         # Handle X Migration
-        migrator = XMigrationHandler(session=self.session)
+        migrator = XMigrationHandler(api_client=self.api_client)
         home_page = migrator.run(response=home_page)
 
         # Dynamic API Definitions Update
-        updater = APIUpdater(logger=self.logger, session=self.session)
+        updater = APIUpdater(api_client=self.api_client, logger=self.logger)
         new_definitions = updater.run(response=str(home_page), deep_scan=deep_scan)
         session_info = self._get_session_info(home_page=parse_html(home_page))
 
@@ -365,8 +371,8 @@ class TweeterPy(TweeterPyClient[TweeterPySyncSession]):
         ondemand_s_bundle_file = self.parser.get_bundle_url(
             bundle_name="ondemand.s", html_content=home_page
         )
-        ondemand_file_response = self.session.request(
-            url=ondemand_s_bundle_file,
+        ondemand_file_response = self.api_client.request(
+            path=ondemand_s_bundle_file,
             method=HttpMethod.GET,
             response_type=ResponseType.HTML,
         )
@@ -380,7 +386,9 @@ class TweeterPy(TweeterPyClient[TweeterPySyncSession]):
         )
 
         # guest token (x-guest-token / gt)
-        self.session.request(url=XUrls.GUEST_TOKEN, method=HttpMethod.POST)
+        self.api_client.post(
+            endpoint=XEndpoints.GUEST_TOKEN, host=XHosts.API, version=APIVersion.V1
+        )
 
         self.logger.info("TweeterPy Client initialized successfully.")
 
@@ -390,7 +398,7 @@ class TweeterPy(TweeterPyClient[TweeterPySyncSession]):
         if csrf_token:
             tokens.update({"ct0": csrf_token})
 
-        self.session.cookies.update(tokens)
+        self.api_client.cookies.update(tokens)
         self.initialize(deep_scan=False)
 
         if not self.is_logged_in:
@@ -399,7 +407,7 @@ class TweeterPy(TweeterPyClient[TweeterPySyncSession]):
         self.logger.info(f"Successfully logged in as {self._meta_data.get('userId')}")
 
 
-class TweeterPyAsync(TweeterPyClient[TweeterPyAsyncSession]):
+class TweeterPyAsync(TweeterPyClient[TweeterPyAsyncSession, AsyncAPIClient]):
     def __init__(
         self,
         logger: Optional[Union[TweeterPyLogger, Type[TweeterPyLogger]]] = None,
@@ -409,20 +417,30 @@ class TweeterPyAsync(TweeterPyClient[TweeterPyAsyncSession]):
         if session is None:
             session = AsyncSession()
 
-        super().__init__(session=session, definitions=definitions, logger=logger)
+        super().__init__(definitions=definitions, logger=logger)
+        self.api_client = AsyncAPIClient(
+            graphql_client=GraphQLClient(
+                feature_switch=self.api_definitions.feature_switch,
+                field_toggle=self.api_definitions.field_toggle,
+            ),
+            session=session,
+            host=XHosts.BASE,
+        )
 
     async def initialize(self, deep_scan: bool = False, max_concurrency: int = 10):
         """Prepares the session by fetching required tokens and metadata."""
-        home_page = await self.session.request(
-            url=XUrls.BASE, method=HttpMethod.GET, response_type=ResponseType.HTML
+        home_page: HTMLResponse = await self.api_client.get(
+            endpoint=XEndpoints.HOME,
+            version=APIVersion.UNVERSIONED,
+            response_type=ResponseType.HTML,
         )
 
         # Handle X Migration
-        migrator = AsyncXMigrationHandler(session=self.session)
+        migrator = AsyncXMigrationHandler(api_client=self.api_client)
         home_page = await migrator.run(response=home_page)
 
         # Dynamic API Definitions Update
-        updater = AsyncAPIUpdater(logger=self.logger, session=self.session)
+        updater = AsyncAPIUpdater(api_client=self.api_client, logger=self.logger)
         new_definitions = await updater.run(
             response=str(home_page),
             deep_scan=deep_scan,
@@ -434,8 +452,8 @@ class TweeterPyAsync(TweeterPyClient[TweeterPyAsyncSession]):
         ondemand_s_bundle_file = self.parser.get_bundle_url(
             bundle_name="ondemand.s", html_content=home_page
         )
-        ondemand_file_response = await self.session.request(
-            url=ondemand_s_bundle_file,
+        ondemand_file_response = await self.api_client.request(
+            path=ondemand_s_bundle_file,
             method=HttpMethod.GET,
             response_type=ResponseType.HTML,
         )
@@ -448,7 +466,9 @@ class TweeterPyAsync(TweeterPyClient[TweeterPyAsyncSession]):
         )
 
         # guest token (x-guest-token / gt)
-        await self.session.request(url=XUrls.GUEST_TOKEN, method=HttpMethod.POST)
+        await self.api_client.post(
+            endpoint=XEndpoints.GUEST_TOKEN, host=XHosts.API, version=APIVersion.V1
+        )
 
         self.logger.info("TweeterPy Client initialized successfully.")
 
@@ -460,7 +480,7 @@ class TweeterPyAsync(TweeterPyClient[TweeterPyAsyncSession]):
         if csrf_token:
             tokens.update({"ct0": csrf_token})
 
-        self.session.cookies.update(tokens)
+        self.api_client.cookies.update(tokens)
         await self.initialize(deep_scan=False)
 
         if not self.is_logged_in:

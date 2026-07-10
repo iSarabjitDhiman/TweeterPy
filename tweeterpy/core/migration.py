@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, Optional
+from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 
-from tweeterpy.core.resources import RegexPatterns, XUrls
-from tweeterpy.schemas.constants import HttpMethod, ResponseType
+from tweeterpy.core.resources import RegexPatterns, XEndpoints, XHosts
+from tweeterpy.schemas.constants import APIVersion, ResponseType
+from tweeterpy.schemas.types import HTMLResponse
 from tweeterpy.utils.decorators import ensure_html
 
 if TYPE_CHECKING:
-    from tweeterpy.core.abstractions import TweeterPyAsyncSession, TweeterPySyncSession
+    from tweeterpy.core.api import APIClient, AsyncAPIClient
 
 
 class BaseXMigrationHandler:
@@ -25,15 +27,16 @@ class BaseXMigrationHandler:
 
     @ensure_html("response")
     def get_migration_form(self, response: BeautifulSoup) -> Optional[Dict[str, Any]]:
+        migration_url = urljoin(base=XHosts.BASE, url=XEndpoints.MIGRATION)
         migration_form = response.select_one("form[name='f']") or response.select_one(
-            f"form[action='{XUrls.X_MIGRATION}']"
+            f"form[action='{migration_url}']"
         )
 
         if not migration_form:
             return
 
         return {
-            "url": migration_form.attrs.get("action", XUrls.X_MIGRATION),
+            "url": migration_form.attrs.get("action", migration_url),
             "method": migration_form.attrs.get("method", "POST").upper(),
             "data": {
                 input_field.get("name"): input_field.get("value")
@@ -44,8 +47,8 @@ class BaseXMigrationHandler:
 
 
 class XMigrationHandler(BaseXMigrationHandler):
-    def __init__(self, session: TweeterPySyncSession) -> None:
-        self.session = session
+    def __init__(self, api_client: APIClient) -> None:
+        self.api_client = api_client
         super().__init__()
 
     def run(self, response: BeautifulSoup) -> BeautifulSoup:
@@ -53,12 +56,14 @@ class XMigrationHandler(BaseXMigrationHandler):
         if not migration_url:
             return response
 
-        migration_page = self.session.request(
-            method=HttpMethod.GET, url=migration_url, response_type=ResponseType.HTML
+        migration_page: HTMLResponse = self.api_client.get(
+            endpoint=migration_url,
+            version=APIVersion.UNVERSIONED,
+            response_type=ResponseType.HTML,
         )
         migration_form = self.get_migration_form(response=migration_page)
         if migration_form:
-            return self.session.request(
+            return self.api_client.request(
                 **migration_form, response_type=ResponseType.HTML
             )
 
@@ -66,8 +71,8 @@ class XMigrationHandler(BaseXMigrationHandler):
 
 
 class AsyncXMigrationHandler(BaseXMigrationHandler):
-    def __init__(self, session: TweeterPyAsyncSession) -> None:
-        self.session = session
+    def __init__(self, api_client: AsyncAPIClient) -> None:
+        self.api_client = api_client
         super().__init__()
 
     async def run(self, response: BeautifulSoup) -> BeautifulSoup:
@@ -75,12 +80,15 @@ class AsyncXMigrationHandler(BaseXMigrationHandler):
         if not migration_url:
             return response
 
-        migration_page = await self.session.request(
-            method=HttpMethod.GET, url=migration_url, response_type=ResponseType.HTML
+        migration_page: HTMLResponse = await self.api_client.get(
+            endpoint=migration_url,
+            version=APIVersion.UNVERSIONED,
+            response_type=ResponseType.HTML,
         )
+
         migration_form = self.get_migration_form(response=migration_page)
         if migration_form:
-            return await self.session.request(
+            return await self.api_client.request(
                 **migration_form, response_type=ResponseType.HTML
             )
 

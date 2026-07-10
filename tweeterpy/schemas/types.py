@@ -12,7 +12,7 @@ from typing import (
 )
 
 from bs4 import BeautifulSoup
-from typing_extensions import NotRequired, Required
+from typing_extensions import NotRequired, Required, TypeVar
 
 from tweeterpy.schemas.constants import HttpMethod
 
@@ -26,6 +26,12 @@ Response: TypeAlias = Any  # The raw response from the transport (httpx/curl_cff
 JSONResponse: TypeAlias = Union[JSONDict, List[Any], Any]
 HTMLResponse: TypeAlias = BeautifulSoup
 TextResponse: TypeAlias = str
+
+ClientResponse = TypeVar(
+    "ClientResponse",
+    bound=Union["HTMLResponse", "JSONResponse", "TextResponse", "Response"],
+    default="Response",
+)
 
 
 class MetadataDict(TypedDict, total=False):

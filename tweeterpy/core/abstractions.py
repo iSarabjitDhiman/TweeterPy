@@ -22,6 +22,7 @@ from tweeterpy.utils.text import parse_html, parse_json, to_string
 if TYPE_CHECKING:
     from x_client_transaction import ClientTransaction
 
+    from tweeterpy.core.api import APIClient, AsyncAPIClient
     from tweeterpy.schemas.types import (
         Headers,
         HTMLResponse,
@@ -214,6 +215,12 @@ class TweeterPyLogger(ABC):
     def exception(self, message: Any, *args: Any, **kwargs: Any) -> None:
         raise NotImplementedError
 
+
+APIClientType = TypeVar(
+    "APIClientType",
+    bound=Union["APIClient", "AsyncAPIClient"],
+    default="APIClient",
+)
 
 SessionType = TypeVar(
     "SessionType",

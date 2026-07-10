@@ -4,14 +4,13 @@ import asyncio
 from typing import TYPE_CHECKING, Optional, Type, Union
 
 from tweeterpy.log import Logger
+from tweeterpy.schemas.constants import APIVersion, ResponseType
+from tweeterpy.schemas.types import TextResponse
 from tweeterpy.services.parser import APIParser
 
 if TYPE_CHECKING:
-    from tweeterpy.core.abstractions import (
-        TweeterPyAsyncSession,
-        TweeterPyLogger,
-        TweeterPySyncSession,
-    )
+    from tweeterpy.core.abstractions import TweeterPyLogger
+    from tweeterpy.core.api import APIClient, AsyncAPIClient
 
 
 class BaseAPIUpdater:
@@ -81,10 +80,10 @@ class BaseAPIUpdater:
 class APIUpdater(BaseAPIUpdater):
     def __init__(
         self,
-        session: TweeterPySyncSession,
+        api_client: APIClient,
         logger: Optional[Union[TweeterPyLogger, Type[TweeterPyLogger]]] = None,
     ) -> None:
-        self.session = session
+        self.api_client = api_client
         super().__init__(logger=logger)
 
     def run(self, response: str, deep_scan: bool = False):
@@ -102,7 +101,11 @@ class APIUpdater(BaseAPIUpdater):
                     self.logger.debug(
                         f"Processing Bundle: {bundle_name} - {bundle_url}"
                     )
-                    js_content = self.session.request(url=bundle_url, method="GET")
+                    js_content: TextResponse = self.api_client.get(
+                        endpoint=bundle_url,
+                        version=APIVersion.UNVERSIONED,
+                        response_type=ResponseType.TEXT,
+                    )
                     operations = self.parser.parse_operations(js_content=js_content)
                     if operations:
                         api_definitions["operations"].update(operations)
@@ -118,10 +121,10 @@ class APIUpdater(BaseAPIUpdater):
 class AsyncAPIUpdater(BaseAPIUpdater):
     def __init__(
         self,
-        session: TweeterPyAsyncSession,
+        api_client: AsyncAPIClient,
         logger: Optional[Union[TweeterPyLogger, Type[TweeterPyLogger]]] = None,
     ) -> None:
-        self.session = session
+        self.api_client = api_client
         super().__init__(logger=logger)
 
     async def fetch_bundle(
@@ -130,8 +133,11 @@ class AsyncAPIUpdater(BaseAPIUpdater):
         async with semaphore:
             try:
                 self.logger.debug(f"Processing Bundle: {bundle_name} - {bundle_url}")
-
-                js_content = await self.session.request(url=bundle_url, method="GET")
+                js_content: TextResponse = await self.api_client.get(
+                    endpoint=bundle_url,
+                    version=APIVersion.UNVERSIONED,
+                    response_type=ResponseType.TEXT,
+                )
                 return self.parser.parse_operations(js_content=js_content)
             except Exception as error:
                 self.logger.exception(f"Error processing {bundle_name}: {error}")
