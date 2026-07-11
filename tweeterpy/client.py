@@ -448,6 +448,9 @@ class TweeterPyAsync(TweeterPyClient[TweeterPyAsyncSession, AsyncAPIClient]):
         )
         session_info = self._get_session_info(home_page=parse_html(home_page))
 
+        # Metadata sync
+        meta_data = self.parser.parse_meta_data(html_content=home_page)
+
         # ClientTransaction Bundle
         ondemand_s_bundle = self.parser.get_bundle(
             bundle_name="ondemand.s", html_content=home_page
@@ -463,6 +466,7 @@ class TweeterPyAsync(TweeterPyClient[TweeterPyAsyncSession, AsyncAPIClient]):
             ondemand_file_response=str(ondemand_file_response),
             new_definitions=new_definitions,
             session_info=session_info,
+            meta_data=meta_data,
         )
 
         # guest token (x-guest-token / gt)
