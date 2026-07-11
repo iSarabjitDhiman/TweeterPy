@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import random
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -28,11 +27,12 @@ from tweeterpy.core.migration import AsyncXMigrationHandler, XMigrationHandler
 from tweeterpy.core.resources import XEndpoints, XHosts, XOperations
 from tweeterpy.core.session import AsyncSession, Session
 from tweeterpy.log import Logger, StandardLogger
-from tweeterpy.schemas.base import TweeterPySchema
+from tweeterpy.schemas import variables
 from tweeterpy.schemas.constants import APIVersion, HttpMethod, ResponseType
 from tweeterpy.schemas.metadata import FeatureSwitch, FieldToggle
 from tweeterpy.schemas.operation import Operation
 from tweeterpy.schemas.types import HTMLResponse
+from tweeterpy.schemas.variables.base import TweeterPyVariableSchema
 from tweeterpy.services.parser import APIParser
 from tweeterpy.services.updater import APIUpdater, AsyncAPIUpdater
 from tweeterpy.utils.text import parse_html
@@ -81,12 +81,9 @@ class TweeterPyClient(Generic[SessionType, APIClientType]):
 
     @property
     def viewer(self):
-        variables = {
-            "withCommunitiesMemberships": True,
-            "withSubscribedTab": True,
-            "withCommunitiesCreation": True,
-        }
-        return self.execute(operation=XOperations.Viewer, variables=variables)
+        return self.execute(
+            operation=XOperations.Viewer, variables=variables.Viewer().to_payload()
+        )
 
     def _apply_updates(
         self,
@@ -132,15 +129,26 @@ class TweeterPyClient(Generic[SessionType, APIClientType]):
         if isinstance(initial_state, dict):
             return initial_state.get("session", {})
 
-    def _normalize_params(
-        self, data: Union[Dict[str, Any], TweeterPySchema]
+    def _resolve_variables(
+        self,
+        schema_cls: Type[TweeterPyVariableSchema],
+        config: Optional[TweeterPyVariableSchema] = None,
+        **kwargs,
     ) -> Dict[str, Any]:
-        """Converts Schema instances to dicts, or returns dicts as-is."""
-        if isinstance(data, TweeterPySchema):
-            return data.model_dump()
-        if isinstance(data, dict):
-            return data
-        raise TypeError(f"Expected dict or TweeterPySchema, got {type(data).__name__}")
+        """Resolves and serializes user inputs into validated GraphQL variables."""
+        input_data = {key: value for key, value in kwargs.items() if value is not None}
+
+        if config is not None:
+            if not isinstance(config, schema_cls):
+                raise TypeError(
+                    f"Expected config instance of {schema_cls.__name__}, got {type(config).__name__}"
+                )
+            if input_data:
+                return config.model_copy(update=input_data, deep=False).to_payload()
+            return config.to_payload()
+
+        generated_schema = schema_cls(**input_data)
+        return generated_schema.to_payload()
 
     def execute(
         self,
@@ -156,174 +164,305 @@ class TweeterPyClient(Generic[SessionType, APIClientType]):
             operation=operation, variables=variables, host=XHosts.API
         )
 
-    def profile_spotlights_query(self, username: str):
-        variables = {"screen_name": username}
+    def profile_spotlights_query(
+        self,
+        screen_name: Optional[str] = None,
+        config: Optional[variables.ProfileSpotlightsQuery] = None,
+    ):
+        resolved_variables = self._resolve_variables(
+            schema_cls=variables.ProfileSpotlightsQuery,
+            config=config,
+            screen_name=screen_name,
+        )
         return self.execute(
-            operation=XOperations.ProfileSpotlightsQuery, variables=variables
+            operation=XOperations.ProfileSpotlightsQuery, variables=resolved_variables
         )
 
-    def user_by_rest_id(self, user_id: str):
-        variables = {"userId": user_id, "withSafetyModeUserFields": True}
-        return self.execute(operation=XOperations.UserByRestId, variables=variables)
-
-    def users_by_rest_ids(self, user_ids: List[str]):
-        variables = {"userIds": user_ids}
-        return self.execute(operation=XOperations.UsersByRestIds, variables=variables)
-
-    def user_by_screen_name(self, screen_name: str):
-        variables = {"screen_name": screen_name, "withSafetyModeUserFields": True}
-        return self.execute(operation=XOperations.UserByScreenName, variables=variables)
-
-    def user_media(self, user_id: str, total: int = 100):
-        variables = {
-            "userId": user_id,
-            "count": total,
-            "includePromotedContent": True,
-            "withClientEventToken": False,
-            "withBirdwatchNotes": False,
-            "withVoice": True,
-            "withV2Timeline": True,
-        }
-        return self.execute(operation=XOperations.UserMedia, variables=variables)
-
-    def user_tweets(self, user_id: str, total: int = 100):
-        variables = {
-            "userId": user_id,
-            "count": total,
-            "includePromotedContent": True,
-            "withQuickPromoteEligibilityTweetFields": True,
-            "withVoice": True,
-            "withV2Timeline": True,
-        }
-        return self.execute(operation=XOperations.UserTweets, variables=variables)
-
-    def user_tweets_and_replies(self, user_id: str, total: int = 20):
-        variables = {
-            "userId": user_id,
-            "count": total,
-            "includePromotedContent": True,
-            "withCommunity": True,
-            "withVoice": True,
-            "withV2Timeline": True,
-        }
+    def user_by_rest_id(
+        self,
+        user_id: Optional[str] = None,
+        config: Optional[variables.UserByRestId] = None,
+    ):
+        resolved_variables = self._resolve_variables(
+            schema_cls=variables.UserByRestId,
+            config=config,
+            user_id=user_id,
+        )
         return self.execute(
-            operation=XOperations.UserTweetsAndReplies, variables=variables
+            operation=XOperations.UserByRestId, variables=resolved_variables
         )
 
-    def tweet_result_by_rest_id(self, tweet_id: str):
-        variables = {
-            "tweetId": tweet_id,
-            "withBirdwatchNotes": True,
-            "withCommunity": False,
-            "includePromotedContent": False,
-            "withVoice": False,
-        }
+    def users_by_rest_ids(
+        self,
+        user_ids: Optional[List[str]] = None,
+        config: Optional[variables.UsersByRestIds] = None,
+    ):
+        resolved_variables = self._resolve_variables(
+            schema_cls=variables.UsersByRestIds,
+            config=config,
+            user_ids=user_ids,
+        )
         return self.execute(
-            operation=XOperations.TweetResultByRestId, variables=variables
+            operation=XOperations.UsersByRestIds, variables=resolved_variables
         )
 
-    def tweet_detail(self, tweet_id: str):
-        referer = random.choice(["home", "profile", "tweet"])
-        variables = {
-            "focalTweetId": tweet_id,
-            "referrer": referer,
-            "rankingMode": "Relevance",
-            "with_rux_injections": False,
-            "includePromotedContent": True,
-            "withCommunity": True,
-            "withQuickPromoteEligibilityTweetFields": True,
-            "withArticleRichContent": False,
-            "withBirdwatchNotes": True,
-            "withVoice": True,
-            "withV2Timeline": True,
-        }
-
-        return self.execute(operation=XOperations.TweetDetail, variables=variables)
-
-    def likes(self, user_id: str, total: int = 100):
-        variables = {
-            "userId": user_id,
-            "count": total,
-            "includePromotedContent": False,
-            "withClientEventToken": False,
-            "withBirdwatchNotes": False,
-            "withVoice": True,
-            "withV2Timeline": True,
-        }
-        return self.execute(operation=XOperations.Likes, variables=variables)
-
-    def home_timeline(self, total: int = 40):
-        variables = {
-            "count": total,
-            "includePromotedContent": True,
-            "latestControlAvailable": True,
-            "withCommunity": True,
-        }
-        return self.execute(operation=XOperations.HomeTimeline, variables=variables)
-
-    def list_latest_tweets_timeline(self, list_id: str, total: int = 100):
-        variables = {"listId": list_id, "count": total}
+    def user_by_screen_name(
+        self,
+        screen_name: Optional[str] = None,
+        config: Optional[variables.UserByScreenName] = None,
+    ):
+        resolved_variables = self._resolve_variables(
+            schema_cls=variables.UserByScreenName,
+            config=config,
+            screen_name=screen_name,
+        )
         return self.execute(
-            operation=XOperations.ListLatestTweetsTimeline, variables=variables
+            operation=XOperations.UserByScreenName, variables=resolved_variables
         )
 
-    def topic_landing_page(self, topic_id: str, total: int = 100):
-        variables = {"rest_id": topic_id, "count": total}
-        return self.execute(operation=XOperations.TopicLandingPage, variables=variables)
-
-    def followers(self, user_id: str, total: int = 100):
-        variables = {"userId": user_id, "count": total, "includePromotedContent": False}
-        return self.execute(operation=XOperations.Followers, variables=variables)
-
-    def following(self, user_id: str, total: int = 100):
-        variables = {"userId": user_id, "count": total, "includePromotedContent": False}
-        return self.execute(operation=XOperations.Following, variables=variables)
-
-    def followers_you_know(self, user_id: str, total: int = 100):
-        variables = {"userId": user_id, "count": total, "includePromotedContent": False}
-        return self.execute(operation=XOperations.FollowersYouKnow, variables=variables)
-
-    def biz_profile_fetch_user(self, user_id: int):
-        variables = {"rest_id": user_id}
+    def user_media(
+        self,
+        user_id: Optional[str] = None,
+        total: Optional[int] = None,
+        config: Optional[variables.UserMedia] = None,
+    ):
+        resolved_variables = self._resolve_variables(
+            schema_cls=variables.UserMedia, config=config, user_id=user_id, count=total
+        )
         return self.execute(
-            operation=XOperations.BizProfileFetchUser, variables=variables
+            operation=XOperations.UserMedia, variables=resolved_variables
         )
 
-    def favoriters(self, tweet_id: str, total: int = 100):
-        variables = {
-            "tweetId": tweet_id,
-            "count": total,
-            "includePromotedContent": True,
-        }
-        return self.execute(operation=XOperations.Favoriters, variables=variables)
-
-    def retweeters(self, tweet_id: str, total: int = 100):
-        variables = {
-            "tweetId": tweet_id,
-            "count": total,
-            "includePromotedContent": True,
-        }
-        return self.execute(operation=XOperations.Retweeters, variables=variables)
-
-    def user_highlights_tweets(self, user_id: int, total: int = 100):
-        variables = {
-            "userId": user_id,
-            "count": total,
-            "includePromotedContent": True,
-            "withVoice": True,
-        }
+    def user_tweets(
+        self,
+        user_id: Optional[str] = None,
+        total: Optional[int] = None,
+        config: Optional[variables.UserTweets] = None,
+    ):
+        resolved_variables = self._resolve_variables(
+            schema_cls=variables.UserTweets, config=config, user_id=user_id, count=total
+        )
         return self.execute(
-            operation=XOperations.UserHighlightsTweets, variables=variables
+            operation=XOperations.UserTweets, variables=resolved_variables
         )
 
-    def search_timeline(self, query: str, search_filter: str = "Top", total: int = 20):
-        variables = {
-            "rawQuery": query,
-            "count": total,
-            "querySource": "typed_query",
-            "product": search_filter,
-        }
-        return self.execute(operation=XOperations.SearchTimeline, variables=variables)
+    def user_tweets_and_replies(
+        self,
+        user_id: Optional[str] = None,
+        total: Optional[int] = None,
+        config: Optional[variables.UserTweetsAndReplies] = None,
+    ):
+        resolved_variables = self._resolve_variables(
+            schema_cls=variables.UserTweetsAndReplies,
+            config=config,
+            user_id=user_id,
+            count=total,
+        )
+        return self.execute(
+            operation=XOperations.UserTweetsAndReplies, variables=resolved_variables
+        )
+
+    def tweet_result_by_rest_id(
+        self,
+        tweet_id: Optional[str] = None,
+        config: Optional[variables.TweetResultByRestId] = None,
+    ):
+        resolved_variables = self._resolve_variables(
+            schema_cls=variables.TweetResultByRestId,
+            config=config,
+            tweet_id=tweet_id,
+        )
+        return self.execute(
+            operation=XOperations.TweetResultByRestId, variables=resolved_variables
+        )
+
+    def tweet_detail(
+        self,
+        focal_tweet_id: Optional[str] = None,
+        config: Optional[variables.TweetDetail] = None,
+    ):
+        resolved_variables = self._resolve_variables(
+            schema_cls=variables.TweetDetail,
+            config=config,
+            focal_tweet_id=focal_tweet_id,
+        )
+
+        return self.execute(
+            operation=XOperations.TweetDetail, variables=resolved_variables
+        )
+
+    def likes(
+        self,
+        user_id: Optional[str] = None,
+        total: Optional[int] = None,
+        config: Optional[variables.Likes] = None,
+    ):
+        resolved_variables = self._resolve_variables(
+            schema_cls=variables.Likes, config=config, user_id=user_id, count=total
+        )
+        return self.execute(operation=XOperations.Likes, variables=resolved_variables)
+
+    def home_timeline(
+        self,
+        total: Optional[int] = None,
+        config: Optional[variables.HomeTimeline] = None,
+    ):
+        resolved_variables = self._resolve_variables(
+            schema_cls=variables.HomeTimeline, config=config, count=total
+        )
+        return self.execute(
+            operation=XOperations.HomeTimeline, variables=resolved_variables
+        )
+
+    def list_latest_tweets_timeline(
+        self,
+        list_id: Optional[str] = None,
+        total: Optional[int] = None,
+        config: Optional[variables.ListLatestTweetsTimeline] = None,
+    ):
+        resolved_variables = self._resolve_variables(
+            schema_cls=variables.ListLatestTweetsTimeline,
+            config=config,
+            list_id=list_id,
+            count=total,
+        )
+        return self.execute(
+            operation=XOperations.ListLatestTweetsTimeline, variables=resolved_variables
+        )
+
+    def topic_landing_page(
+        self,
+        rest_id: Optional[str] = None,
+        total: Optional[int] = None,
+        config: Optional[variables.TopicLandingPage] = None,
+    ):
+        resolved_variables = self._resolve_variables(
+            schema_cls=variables.TopicLandingPage,
+            config=config,
+            rest_id=rest_id,
+            count=total,
+        )
+        return self.execute(
+            operation=XOperations.TopicLandingPage, variables=resolved_variables
+        )
+
+    def followers(
+        self,
+        user_id: Optional[str] = None,
+        total: Optional[int] = None,
+        config: Optional[variables.Followers] = None,
+    ):
+        resolved_variables = self._resolve_variables(
+            schema_cls=variables.Followers, config=config, user_id=user_id, count=total
+        )
+        return self.execute(
+            operation=XOperations.Followers, variables=resolved_variables
+        )
+
+    def following(
+        self,
+        user_id: Optional[str] = None,
+        total: Optional[int] = None,
+        config: Optional[variables.Following] = None,
+    ):
+        resolved_variables = self._resolve_variables(
+            schema_cls=variables.Following, config=config, user_id=user_id, count=total
+        )
+        return self.execute(
+            operation=XOperations.Following, variables=resolved_variables
+        )
+
+    def followers_you_know(
+        self,
+        user_id: Optional[str] = None,
+        total: Optional[int] = None,
+        config: Optional[variables.FollowersYouKnow] = None,
+    ):
+        resolved_variables = self._resolve_variables(
+            schema_cls=variables.FollowersYouKnow,
+            config=config,
+            user_id=user_id,
+            count=total,
+        )
+        return self.execute(
+            operation=XOperations.FollowersYouKnow, variables=resolved_variables
+        )
+
+    def biz_profile_fetch_user(
+        self,
+        rest_id: Optional[str] = None,
+        config: Optional[variables.BizProfileFetchUser] = None,
+    ):
+        resolved_variables = self._resolve_variables(
+            schema_cls=variables.BizProfileFetchUser, config=config, rest_id=rest_id
+        )
+        return self.execute(
+            operation=XOperations.BizProfileFetchUser, variables=resolved_variables
+        )
+
+    def favoriters(
+        self,
+        tweet_id: Optional[str] = None,
+        total: Optional[int] = None,
+        config: Optional[variables.Favoriters] = None,
+    ):
+        resolved_variables = self._resolve_variables(
+            schema_cls=variables.Favoriters,
+            config=config,
+            tweet_id=tweet_id,
+            count=total,
+        )
+        return self.execute(
+            operation=XOperations.Favoriters, variables=resolved_variables
+        )
+
+    def retweeters(
+        self,
+        tweet_id: Optional[str] = None,
+        total: Optional[int] = None,
+        config: Optional[variables.Retweeters] = None,
+    ):
+        resolved_variables = self._resolve_variables(
+            schema_cls=variables.Retweeters,
+            config=config,
+            tweet_id=tweet_id,
+            count=total,
+        )
+        return self.execute(
+            operation=XOperations.Retweeters, variables=resolved_variables
+        )
+
+    def user_highlights_tweets(
+        self,
+        user_id: Optional[str] = None,
+        total: Optional[int] = None,
+        config: Optional[variables.UserHighlightsTweets] = None,
+    ):
+        resolved_variables = self._resolve_variables(
+            schema_cls=variables.UserHighlightsTweets,
+            config=config,
+            user_id=user_id,
+            count=total,
+        )
+        return self.execute(
+            operation=XOperations.UserHighlightsTweets, variables=resolved_variables
+        )
+
+    def search_timeline(
+        self,
+        raw_query: Optional[str] = None,
+        total: Optional[int] = None,
+        config: Optional[variables.SearchTimeline] = None,
+    ):
+        resolved_variables = self._resolve_variables(
+            schema_cls=variables.SearchTimeline,
+            config=config,
+            raw_query=raw_query,
+            count=total,
+        )
+        return self.execute(
+            operation=XOperations.SearchTimeline, variables=resolved_variables
+        )
 
 
 class TweeterPy(TweeterPyClient[TweeterPySyncSession, APIClient]):
